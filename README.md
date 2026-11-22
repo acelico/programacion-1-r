@@ -57,30 +57,6 @@ Cada carpeta de `temas/` corresponde a una sesión y contiene:
 
 ---
 
-## Cómo trabajar con los materiales
 
-1. Instala **R** (<https://cran.r-project.org/>) y un entorno de desarrollo: **RStudio** (<https://posit.co/download/rstudio-desktop/>) o **Positron** (<https://positron.posit.co/>).
-2. Instala **Quarto** (<https://quarto.org/>) si quieres renderizar las diapositivas tú mismo.
-3. Descarga o clona este repositorio y ejecuta una vez el script de paquetes:
 
-   ```r
-   source("instalar_paquetes.R")
-   ```
 
-4. Abre el `.qmd` de cada tema **desde su propia carpeta**. Los datos se cargan con rutas relativas, por ejemplo `read.csv("consumoelectricov1.csv")` o `fromJSON("datos/paises.json")`.
-
----
-
-## Recursos recomendados
-
-- **Libro open-source:** Grolemund, G. *Hands-On Programming with R*. <https://rstudio-education.github.io/hopr/>
-- **Plataformas de práctica:** DataCamp, Coursera.
-- **Comunidad:** Stack Overflow y GitHub.
-- **Documentación:** [tidyverse](https://www.tidyverse.org/) · [ggplot2](https://ggplot2.tidyverse.org/) · [dplyr](https://dplyr.tidyverse.org/) · [Quarto](https://quarto.org/docs/guide/)
-
-### Cómo estudiar la asignatura
-
-- **Ven a clase:** aprovecha las explicaciones y la práctica guiada.
-- **Trabaja semana a semana:** repasa los materiales al ritmo del curso.
-- **Refuerza con recursos externos** para practicar más.
-- **Enfréntate al código:** escribe y prueba el código tú mismo, en lugar de copiar soluciones.
