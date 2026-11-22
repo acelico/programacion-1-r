@@ -1,0 +1,563 @@
+---
+title: "Guía de JSON en R"
+subtitle: "Qué es, cómo está organizado y cómo trabajar con él con `jsonlite` y `tidyverse`"
+author: "Programación 1 — Introducción a R"
+date: "2026"
+lang: es
+format:
+  html:
+    toc: true
+    toc-title: "Contenido"
+    toc-depth: 2
+    embed-resources: true
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+# 1. ¿Qué es JSON?
+
+**JSON** (*JavaScript Object Notation*) es un formato de **texto plano** para guardar e intercambiar datos. Lo usan casi todas las **APIs web** (bancos centrales, Eurostat, OpenAlex, GitHub…) y muchísimas aplicaciones para guardar configuraciones. En esta clase aprendemos a leer y manipular JSON **desde ficheros locales**; en la siguiente veremos cómo se descarga directamente de las APIs.
+
+Si CSV y Excel guardan **tablas** (filas × columnas), JSON guarda **estructuras con jerarquía**: cosas dentro de otras cosas.
+
+| | CSV / Excel | JSON |
+|---|---|---|
+| Forma de los datos | Tabla rectangular | Árbol (anidado) |
+| ¿Registros con campos distintos? | No: todas las filas tienen las mismas columnas | Sí: cada registro puede tener campos distintos |
+| ¿Tipos de dato? | Todo es texto (R los adivina) | Números, texto, lógicos y `null` están explícitos |
+| ¿Se puede abrir en un editor de texto? | CSV sí, Excel no | Sí |
+| Uso típico | Datos ya tabulares | APIs, datos con estructura interna |
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(jsonlite)
+```
+
+# 2. Anatomía de un JSON
+
+Un JSON se construye con solo **seis ingredientes**. Este es un ejemplo con todos ellos:
+
+```json
+{
+  "country": "Spain",
+  "code": "ESP",
+  "population_m": 47.4,
+  "eurozone": true,
+  "gdp_pc": [28100, 29300, 30500],
+  "capital": { "name": "Madrid", "inhabitants_m": 3.3 },
+  "head_of_state": null
+}
+```
+
+| Ingrediente | Cómo se escribe | En el ejemplo |
+|---|---|---|
+| **Objeto** | `{ "clave": valor, ... }` (pares clave-valor) | Todo el bloque, y también `capital` |
+| **Array** (lista) | `[ valor, valor, ... ]` | `gdp_pc` |
+| **Texto** (*string*) | `"entre comillas dobles"` | `"Spain"` |
+| **Número** | `47.4`, `2020` (sin comillas) | `population_m` |
+| **Lógico** | `true` / `false` (en minúscula) | `eurozone` |
+| **Nulo** | `null` | `head_of_state` |
+
+Además, un valor puede ser a su vez un objeto o un array: así es como se **anida**.
+
+## Reglas de sintaxis (los errores más habituales)
+
+- Las claves y los textos van **siempre con comillas dobles** `"..."`. Las comillas simples **no valen**.
+- Entre elementos hay una coma, pero **no hay coma tras el último** (`{"a": 1,}` es un error).
+- No se admiten comentarios.
+- `true`, `false` y `null` van en minúscula y **sin comillas**.
+
+Con `validate()` puedes comprobar si un texto es JSON válido:
+
+```{r}
+#| label: validar
+validate('{"a": 1, "b": [1, 2, 3]}')   # válido
+validate('{"a": 1,}')                   # coma sobrante: inválido
+validate("{'a': 1}")                    # comillas simples: inválido
+```
+
+## Cómo "ver" un JSON: el árbol
+
+Piensa en un JSON como un **árbol**. El ejemplo anterior es:
+
+```
+(raíz: objeto)
+├── country        "Spain"
+├── code           "ESP"
+├── population_m   47.4
+├── eurozone       TRUE
+├── gdp_pc         [28100, 29300, 30500]     <- array de 3 números
+├── capital        (objeto)
+│   ├── name           "Madrid"
+│   └── inhabitants_m  3.3
+└── head_of_state  null
+```
+
+Para llegar a un valor se recorre el árbol por las ramas: `capital` → `name`.
+
+# 3. Del JSON a R con `jsonlite`
+
+`fromJSON()` convierte JSON en objetos de R. Acepta **un texto** o **la ruta a un fichero**. (Más adelante veremos que también acepta una **URL**: así se descarga JSON de las APIs.)
+
+```{r}
+#| label: from-text
+txt <- '{
+  "country": "Spain",
+  "code": "ESP",
+  "population_m": 47.4,
+  "eurozone": true,
+  "gdp_pc": [28100, 29300, 30500],
+  "capital": { "name": "Madrid", "inhabitants_m": 3.3 },
+  "head_of_state": null
+}'
+
+x <- fromJSON(txt)
+str(x)
+```
+
+## Tabla de equivalencias
+
+| En JSON | En R |
+|---|---|
+| Objeto `{ }` | **Lista con nombres** (`list`) |
+| Array de números `[1, 2, 3]` | **Vector** numérico |
+| Array de textos | Vector de caracteres |
+| Array de objetos `[{...}, {...}]` | **Data frame** (una fila por objeto) |
+| Texto, número | `character`, `numeric` |
+| `true` / `false` | `TRUE` / `FALSE` |
+| `null` | `NA` (dentro de un data frame o vector) o `NULL` (suelto en una lista) |
+
+Y como un objeto es una lista con nombres, accedes a los valores con `$` y `[[ ]]`:
+
+```{r}
+#| label: acceso
+x$country             # un texto
+x$capital$name        # un valor dentro de un objeto anidado
+x$gdp_pc[2]           # segundo elemento de un array
+x[["population_m"]]   # equivalente a x$population_m
+```
+
+# 4. El caso más común: un array de objetos = una tabla
+
+Casi todos los datos "de verdad" en JSON vienen como un **array de objetos**, donde cada objeto es un registro. `fromJSON()` lo convierte directamente en data frame:
+
+```{r}
+#| label: array-objetos
+txt2 <- '[
+  {"code": "ESP", "year": 2020, "debt": 120.0},
+  {"code": "FRA", "year": 2020, "debt": 114.7},
+  {"code": "ITA", "year": 2020, "debt": 154.9, "note": "high"}
+]'
+
+d <- fromJSON(txt2)
+d
+class(d)
+```
+
+Fíjate en que **la clave `note` solo aparece en un registro**: en los demás se rellena con `NA`. En JSON esto es perfectamente válido, mientras que en un CSV todas las filas tendrían que tener todas las columnas.
+
+# 5. Aplanar JSON anidado
+
+El caso complicado: cada registro contiene **objetos dentro de objetos**. Esta es la misma estructura que tiene nuestro fichero de finanzas:
+
+```{r}
+#| label: anidado
+txt3 <- '[
+  {"country": "ESP", "year": 2020,
+   "government": {"debt": 120.0, "deficit": -10.1},
+   "rating": "A"},
+  {"country": "FRA", "year": 2020,
+   "government": {"debt": 114.7, "deficit": -9.0},
+   "rating": null}
+]'
+
+d3 <- fromJSON(txt3)
+str(d3)
+```
+
+La columna `government` **no es una columna normal**: es un data frame dentro del data frame. Hay dos formas de aplanarla.
+
+## Opción A: `flatten = TRUE` (la más rápida)
+
+```{r}
+#| label: flatten
+d3_flat <- fromJSON(txt3, flatten = TRUE)
+d3_flat
+```
+
+Las columnas anidadas se convierten en columnas normales con nombres del tipo `government.debt` (`objeto.campo`). Si necesitas nombres más limpios, usa `rename()`.
+
+## Opción B: `unnest_wider()` de tidyr (más control)
+
+Se lee el JSON **sin simplificar** (`simplifyVector = FALSE` devuelve listas puras) y se "abre" cada nivel con `unnest_wider()`:
+
+```{r}
+#| label: unnest
+raw <- fromJSON(txt3, simplifyVector = FALSE)
+
+tibble(registro = raw) %>%
+  unnest_wider(registro) %>%                      # abre el primer nivel
+  unnest_wider(government, names_sep = "_")       # abre el objeto "government"
+```
+
+::: {.callout-tip}
+## ¿Cuál elijo?
+Para ficheros tabulares con poca anidación, **`flatten = TRUE`** es suficiente. Si la estructura es irregular o quieres decidir tú cada paso, usa **`unnest_wider()`**.
+:::
+
+# 6. Arrays dentro de los registros
+
+A veces un campo contiene **varios valores** (un array). R lo guarda como una **columna-lista**:
+
+```{r}
+#| label: arrays
+txt4 <- '[
+  {"code": "ESP", "tags": ["eurozone", "advanced"]},
+  {"code": "BRA", "tags": ["emerging"]}
+]'
+
+d4 <- fromJSON(txt4)
+d4                       # la columna "tags" contiene listas
+```
+
+Para pasar a **una fila por valor** se usa `unnest_longer()`:
+
+```{r}
+#| label: unnest-longer
+d4 %>% unnest_longer(tags)
+```
+
+# 7. De R a JSON
+
+`toJSON()` y `write_json()` hacen el camino inverso. Dos argumentos son casi obligatorios:
+
+- `pretty = TRUE`: legible, con sangrías.
+- `auto_unbox = TRUE`: sin él, **cada valor suelto se escribe como array de un elemento** (`[1]` en vez de `1`).
+
+```{r}
+#| label: tojson
+df <- tibble(code = c("ESP", "FRA"), year = 2020, debt = c(120.0, 114.7))
+
+toJSON(df, pretty = TRUE)
+
+# El error clásico de olvidar auto_unbox:
+toJSON(list(country = "Spain", year = 2020))
+toJSON(list(country = "Spain", year = 2020), auto_unbox = TRUE)
+```
+
+Para guardar en un fichero (aquí en una carpeta temporal para no ensuciar tu proyecto):
+
+```{r}
+#| label: write
+ruta <- tempfile(fileext = ".json")
+write_json(df, ruta, pretty = TRUE)
+cat(readLines(ruta), sep = "\n")
+```
+
+# 8. Caso práctico: un fichero JSON real
+
+Vamos a trabajar con `datos/paises.json`, el fichero que usaréis en el ejercicio. Contiene **142 países** y tiene la **misma estructura que las APIs de países** que se usan en la práctica (en concreto la de *REST Countries*): un array de objetos, con objetos anidados, listas y objetos de claves variables. Los valores son aproximados y con fines docentes.
+
+## Paso 0: míralo como texto
+
+Antes de cargar un JSON desconocido, **léelo como texto**: es la forma más rápida de entender su estructura.
+
+```{r}
+#| label: json-texto
+readLines("datos/paises.json", n = 30)
+```
+
+Observa: `name` es un **objeto** (con otro objeto, `nativeName`, dentro), `capital` y `borders` son **arrays** y `landlocked` es un valor lógico (`true`/`false`, sin comillas).
+
+```{r}
+#| label: json-validate
+validate(paste(readLines("datos/paises.json", warn = FALSE), collapse = "\n"))
+```
+
+## Paso 1: cargarlo y ver su forma
+
+```{r}
+#| label: json-carga
+paises <- fromJSON("datos/paises.json")
+
+class(paises)
+dim(paises)         # una fila por país
+names(paises)
+```
+
+La respuesta es un **array de objetos** (un objeto por país), así que `fromJSON()` la convierte **directamente en un data frame**.
+
+Pero ojo: **no todas las columnas son normales**.
+
+
+
+## Paso 2: objetos anidados (`name`)
+
+```{r}
+#| label: rest-name
+class(paises$name)          # ¡un data frame dentro del data frame!
+names(paises$name)
+head(paises$name$common)    # se accede con $ encadenados
+```
+
+`name` es un **objeto anidado** (tiene `common`, `official` y `nativeName`). Con `flatten = TRUE` se convertiría en columnas sueltas, pero `nativeName` contiene una clave **por cada idioma** de cada país, así que aparecen muchísimas columnas:
+
+```{r}
+#| label: rest-flatten
+paises_plano <- fromJSON("datos/paises.json", flatten = TRUE)
+c(sin_flatten = ncol(paises), con_flatten = ncol(paises_plano))
+```
+
+Por eso, para este JSON, es mejor **no aplanar** y quedarte con lo que necesitas (`paises$name$common`).
+
+## Paso 3: arrays (`capital`, `borders`)
+
+Un país puede tener **varias capitales o ninguna**, y un número distinto de fronteras. Eso no cabe en una celda normal, así que R guarda una **lista** en la columna:
+
+```{r}
+#| label: rest-listas
+class(paises$borders)
+paises$borders[[1]]                      # fronteras del primer país
+head(lengths(paises$borders))            # cuántas fronteras tiene cada país
+```
+
+Para convertir una lista en **una fila por elemento** se usa `unnest_longer()`:
+
+```{r}
+#| label: rest-unnest
+paises %>%
+  select(cca3, borders) %>%
+  unnest_longer(borders) %>%      # una fila por (país, frontera)
+  head(8)
+```
+
+Los países con la lista vacía (islas) desaparecen en esta versión larga: si quisieras conservarlos, `unnest_longer(borders, keep_empty = TRUE)`.
+
+## Paso 4: la tabla limpia
+
+```{r}
+#| label: rest-limpia
+countries <- tibble(
+  iso3       = paises$cca3,
+  name_rest  = paises$name$common,
+  continent  = paises$region,
+  subregion  = paises$subregion,
+  area_km2   = paises$area,
+  landlocked = paises$landlocked,
+  capital    = map_chr(paises$capital, 1, .default = NA_character_),
+  n_borders  = lengths(paises$borders)
+)
+
+glimpse(countries)
+```
+
+- `map_chr(x, 1, .default = NA_character_)` coge el **primer elemento** de cada lista y devuelve `NA` si está vacía.
+- `lengths()` cuenta los elementos de cada lista.
+- Fíjate en que `landlocked` ya es `logical` (`TRUE`/`FALSE`) y `area` es numérica: **JSON trae los tipos**, a diferencia del CSV.
+
+## Paso 5: objetos con claves dinámicas (avanzado)
+
+Otros campos, como `currencies`, son objetos cuyas **claves son datos**: la clave es el código de la moneda (`"EUR"`, `"CHF"`…), distinta en cada país. Con `flatten` esto da una columna por moneda; es mejor leerlo como **lista pura** (`simplifyVector = FALSE`) y extraer los nombres de las claves:
+
+```{r}
+#| label: rest-claves
+cur <- fromJSON("datos/paises.json", simplifyVector = FALSE)
+
+monedas <- tibble(
+  iso3   = map_chr(cur, "cca3"),
+  moneda = map_chr(cur, ~ if (is.null(.x$currencies)) NA_character_
+                          else names(.x$currencies)[1])      # clave = código de moneda
+)
+
+monedas %>% count(moneda, sort = TRUE) %>% head(5)
+```
+
+## Paso 6: mismos datos, dos formatos (JSON frente a tabla)
+
+¿Cómo se vería esta misma información en una **tabla plana** (la que abrirías en Excel)? Hay un problema: una celda de una tabla solo puede contener **un valor**, mientras que el JSON tiene objetos anidados y listas. Hay que decidir cómo representarlos. Aquí `name` se reparte en dos columnas y las listas se pegan en **un texto separado por `;`**:
+
+```{r}
+#| label: rest-tabla
+tabla_plana <- tibble(
+  cca3          = paises$cca3,
+  name_common   = paises$name$common,
+  name_official = paises$name$official,
+  region        = paises$region,
+  subregion     = paises$subregion,
+  area          = paises$area,
+  landlocked    = paises$landlocked,
+  capital       = map_chr(paises$capital, ~ paste(.x, collapse = ";")),
+  borders       = map_chr(paises$borders, ~ paste(.x, collapse = ";"))
+)
+
+write_csv(tabla_plana, "paises_tabla.csv")     # se crea en tu carpeta: ábrelo con Excel
+tabla <- read_csv("paises_tabla.csv", show_col_types = FALSE)
+
+tabla %>% select(cca3, name_common, capital, borders) %>% head(6)
+```
+
+Mira la columna `borders`: lo que en el JSON era una **lista** (`["AND", "FRA", "PRT"]`), en la tabla es un **texto** (`"AND;FRA;PRT"`). Para contar fronteras ya no sirve `lengths()`; hay que trocear el texto:
+
+```{r}
+#| label: rest-comparar
+n_borders_tabla <- if_else(is.na(tabla$borders), 0L, str_count(tabla$borders, ";") + 1L)
+
+all(n_borders_tabla == lengths(paises$borders))   # mismo resultado, más trabajo
+```
+
+Y la alternativa de tener **una fila por país y frontera** (como en el paso 3) obliga a **repetir** los datos del país en cada fila. La tabla ancha no puede evitar esa elección; el JSON, sí.
+
+### Diferencias, resumidas
+
+| Rasgo | JSON | Tabla CSV plana |
+|---|---|---|
+| **Objetos anidados** (`name`) | Un objeto dentro del registro | Columnas separadas por convención (`name_common`, `name_official`) |
+| **Listas** (`capital`, `borders`) | Una lista de verdad, de longitud variable | Un **texto** con separadores (`"AND;FRA;PRT"`) o filas repetidas |
+| **Tipos** | Número, texto y lógico explícitos (`true`/`false`) | Todo es texto; R lo adivina al leer |
+| **Valores ausentes** | `null` o lista vacía `[]` | Celda vacía (o `""`) |
+| **Campos que cambian por registro** | Cada registro puede traer claves distintas | Todas las filas tienen las mismas columnas |
+| **Contar fronteras en R** | `lengths(borders)` | `str_count(borders, ";") + 1`, con cuidado con las celdas vacías |
+| **Para leer a ojo** | Incómodo | Cómodo (Excel) |
+
+::: {.callout-note}
+## Cuándo usar cada uno
+Una **tabla plana** es cómoda para **leer** y para datos realmente rectangulares. El **JSON** es mejor cuando los datos tienen **estructura interna** (objetos dentro de objetos, listas de longitud variable): no hay que inventar convenciones para encajarlos.
+:::
+
+::: {.callout-tip}
+## Ver un JSON largo sin cargarlo
+Si un JSON viene en **una sola línea** (muy habitual al descargarlo), `prettify()` lo sangra para poder leerlo:
+
+```{r}
+#| label: json-prettify
+txt <- '{"name":"Spain","capital":["Madrid"],"landlocked":false}'
+cat(prettify(txt))
+```
+:::
+
+# 9. Mini-ejercicios (5 minutos)
+
+Prueba a resolverlos antes de abrir la solución.
+
+## Ejercicio A
+
+Dado este JSON, extrae **solo los nombres** de los países y el **PIB del segundo**:
+
+```{r}
+#| label: ej-a
+txt_a <- '{
+  "source": "test",
+  "countries": [
+    {"name": "Spain",  "gdp": 1400},
+    {"name": "Italy",  "gdp": 2000},
+    {"name": "Greece", "gdp": 220}
+  ]
+}'
+
+# TU CÓDIGO AQUÍ
+```
+
+::: {.callout-tip collapse="true"}
+## Solución
+```{r}
+#| label: sol-a
+a <- fromJSON(txt_a)
+a$countries$name          # vector de nombres
+a$countries$gdp[2]        # PIB del segundo país
+```
+`countries` es un array de objetos, así que `fromJSON()` lo convierte en un data frame.
+:::
+
+## Ejercicio B
+
+¿Qué JSON producirá esta línea? Predícelo y luego compruébalo. ¿Qué cambia si añades `auto_unbox = TRUE`?
+
+```{r}
+#| label: ej-b
+toJSON(list(id = 7, tags = c("a", "b")))
+```
+
+::: {.callout-tip collapse="true"}
+## Solución
+```{r}
+#| label: sol-b
+toJSON(list(id = 7, tags = c("a", "b")), auto_unbox = TRUE)
+```
+Sin `auto_unbox`, `id` se escribe como `[7]`. Con `auto_unbox = TRUE`, los valores de longitud 1 se escriben sueltos (`7`), pero `tags`, que tiene dos elementos, sigue siendo un array.
+:::
+
+## Ejercicio C
+
+Con la tabla `countries` (la del paso 4), cuenta cuántos países hay **en cada continente** y cuántos **no tienen litoral**.
+
+```{r}
+#| label: ej-c
+# TU CÓDIGO AQUÍ
+```
+
+::: {.callout-tip collapse="true"}
+## Solución
+```{r}
+#| label: sol-c
+countries %>% count(continent, sort = TRUE)
+
+countries %>% count(landlocked)
+```
+:::
+
+## Ejercicio D
+
+Lee `datos/paises.json` con `fromJSON(..., simplifyVector = FALSE)` y obtén el **número de idiomas oficiales de Suiza** (`"CHE"`). Pista: con esta lectura, cada país es un elemento de una lista; para encontrar el de Suiza puedes usar `purrr::keep()` o `purrr::detect()`.
+
+```{r}
+#| label: ej-d
+# TU CÓDIGO AQUÍ
+```
+
+::: {.callout-tip collapse="true"}
+## Solución
+```{r}
+#| label: sol-d
+lista <- fromJSON("datos/paises.json", simplifyVector = FALSE)
+suiza <- detect(lista, ~ .x$cca3 == "CHE")
+length(suiza$languages)     # 3
+names(suiza$languages)      # las claves son los códigos de idioma
+```
+:::
+
+# 10. Chuleta
+
+| Quiero… | Código |
+|---|---|
+| Leer JSON de un fichero o de un texto | `fromJSON("ruta.json")` |
+| Aplanar objetos anidados | `fromJSON(x, flatten = TRUE)` |
+| Obtener listas puras (sin simplificar) | `fromJSON(x, simplifyVector = FALSE)` |
+| Ver la estructura por niveles | `str(x, max.level = 2)` |
+| Comprobar si un texto es JSON válido | `validate(x)` |
+| Leer un JSON largo en una línea | `cat(prettify(readLines(f)))` |
+| Entrar en un objeto anidado | `datos$name$common` |
+| Contar elementos de una columna-lista | `lengths(datos$borders)` |
+| Coger el primer elemento de cada lista | `map_chr(datos$capital, 1, .default = NA_character_)` |
+| Una fila por elemento de un array | `unnest_longer(col)` |
+| Abrir una columna-objeto | `unnest_wider(col, names_sep = "_")` |
+| Encontrar un elemento de una lista por un campo | `detect(lista, ~ .x$cca3 == "CHE")` |
+| R → texto JSON | `toJSON(x, pretty = TRUE, auto_unbox = TRUE)` |
+| R → fichero JSON | `write_json(x, "salida.json", pretty = TRUE, auto_unbox = TRUE)` |
+
+**Flujo recomendado ante un JSON desconocido:**
+
+1. Míralo como texto: `readLines(ruta, n = 30)`.
+2. `fromJSON(...)` + `class()`, `dim()`, `names()`, `str(max.level = 1)`: explora la estructura.
+3. Identifica **qué columnas no son normales**: objetos anidados (`data.frame` dentro del data frame) y listas.
+4. Comprueba que has recibido lo que esperabas (filas, columnas, algún caso conocido).
+5. Quédate con las columnas que necesitas: accede con `$`, `lengths()`, `map_chr()`…
+6. Revisa tipos (fechas y números que llegan como texto) y `NA`.
+
+::: {.callout-note}
+## Próxima clase
+El mismo `fromJSON()` que has usado con un fichero acepta una **URL**. En la siguiente clase veremos cómo descargar JSON directamente de **APIs**, cómo construir las URL de las peticiones y qué ventajas e inconvenientes tiene frente a un fichero local.
+:::

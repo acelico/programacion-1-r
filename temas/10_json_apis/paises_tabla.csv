@@ -1,0 +1,143 @@
+cca3,name_common,name_official,region,subregion,area,landlocked,capital,borders
+AFG,Afghanistan,Afghanistan,Asia,Southern Asia,652230,TRUE,Kabul,IRN;PAK;TJK;TKM;UZB;CHN
+AGO,Angola,Angola,Africa,Middle Africa,1246700,FALSE,Luanda,COG;COD;ZMB;NAM
+AND,Andorra,Andorra,Europe,Southern Europe,468,TRUE,Andorra la Vella,FRA;ESP
+ARE,United Arab Emirates,United Arab Emirates,Asia,Western Asia,83600,FALSE,Abu Dhabi,OMN;SAU
+ARG,Argentina,Argentine Republic,Americas,South America,2780400,FALSE,Buenos Aires,BOL;BRA;CHL;PRY;URY
+ARM,Armenia,Armenia,Asia,Western Asia,29743,TRUE,Yerevan,AZE;GEO;IRN;TUR
+ATA,Antarctica,Antarctica,Antarctic,NA,14000000,FALSE,,
+AUS,Australia,Commonwealth of Australia,Oceania,Australia and New Zealand,7692024,FALSE,Canberra,
+AUT,Austria,Austria,Europe,Western Europe,83871,TRUE,Vienna,CZE;DEU;HUN;ITA;LIE;SVK;SVN;CHE
+BEL,Belgium,Kingdom of Belgium,Europe,Western Europe,30528,FALSE,Brussels,FRA;DEU;LUX;NLD
+BFA,Burkina Faso,Burkina Faso,Africa,Western Africa,272967,TRUE,Ouagadougou,BEN;CIV;GHA;MLI;NER;TGO
+BGD,Bangladesh,Bangladesh,Asia,Southern Asia,147570,FALSE,Dhaka,MMR;IND
+BGR,Bulgaria,Bulgaria,Europe,Eastern Europe,110879,FALSE,Sofia,GRC;MKD;ROU;SRB;TUR
+BHS,Bahamas,Bahamas,Americas,Caribbean,13943,FALSE,Nassau,
+BLR,Belarus,Belarus,Europe,Eastern Europe,207600,TRUE,Minsk,LVA;LTU;POL;RUS;UKR
+BOL,Bolivia,Bolivia,Americas,South America,1098581,TRUE,Sucre,ARG;BRA;CHL;PRY;PER
+BRA,Brazil,Federative Republic of Brazil,Americas,South America,8515767,FALSE,Brasília,ARG;BOL;COL;GUY;PRY;PER;SUR;URY;VEN
+BRB,Barbados,Barbados,Americas,Caribbean,430,FALSE,Bridgetown,
+BRN,Brunei,Brunei,Asia,South-Eastern Asia,5765,FALSE,Bandar Seri Begawan,MYS
+BTN,Bhutan,Bhutan,Asia,Southern Asia,38394,TRUE,Thimphu,CHN;IND
+BWA,Botswana,Botswana,Africa,Southern Africa,582000,TRUE,Gaborone,NAM;ZAF;ZMB;ZWE
+CAN,Canada,Canada,Americas,North America,9984670,FALSE,Ottawa,USA
+CHE,Switzerland,Swiss Confederation,Europe,Western Europe,41284,TRUE,Bern,AUT;FRA;ITA;LIE;DEU
+CHL,Chile,Chile,Americas,South America,756102,FALSE,Santiago,ARG;BOL;PER
+CHN,China,People's Republic of China,Asia,Eastern Asia,9706961,FALSE,Beijing,AFG;BTN;MMR;HKG;IND;KAZ;PRK;KGZ;LAO;MAC;MNG;NPL;PAK;RUS;TJK;VNM
+CIV,Ivory Coast,Ivory Coast,Africa,Western Africa,322463,FALSE,Yamoussoukro,BFA;GHA;GIN;LBR;MLI
+CMR,Cameroon,Cameroon,Africa,Middle Africa,475442,FALSE,Yaoundé,CAF;TCD;COG;GNQ;GAB;NGA
+COD,DR Congo,Democratic Republic of the Congo,Africa,Middle Africa,2344858,FALSE,Kinshasa,AGO;BDI;CAF;COG;RWA;SSD;TZA;UGA;ZMB
+COL,Colombia,Colombia,Americas,South America,1141748,FALSE,Bogotá,BRA;ECU;PAN;PER;VEN
+CRI,Costa Rica,Costa Rica,Americas,Central America,51100,FALSE,San José,NIC;PAN
+CUB,Cuba,Cuba,Americas,Caribbean,109884,FALSE,Havana,
+CYP,Cyprus,Cyprus,Europe,Southern Europe,9251,FALSE,Nicosia,
+CZE,Czechia,Czechia,Europe,Central Europe,78865,TRUE,Prague,AUT;DEU;POL;SVK
+DEU,Germany,Federal Republic of Germany,Europe,Western Europe,357114,FALSE,Berlin,AUT;BEL;CZE;DNK;FRA;LUX;NLD;POL;CHE
+DNK,Denmark,Kingdom of Denmark,Europe,Northern Europe,43094,FALSE,Copenhagen,DEU
+DOM,Dominican Republic,Dominican Republic,Americas,Caribbean,48671,FALSE,Santo Domingo,HTI
+DZA,Algeria,Algeria,Africa,Northern Africa,2381741,FALSE,Algiers,LBY;MLI;MRT;MAR;NER;ESH;TUN
+ECU,Ecuador,Ecuador,Americas,South America,276841,FALSE,Quito,COL;PER
+EGY,Egypt,Arab Republic of Egypt,Africa,Northern Africa,1002450,FALSE,Cairo,ISR;LBY;PSE;SDN
+ESP,Spain,Kingdom of Spain,Europe,Southern Europe,505992,FALSE,Madrid,AND;FRA;GIB;PRT;MAR
+EST,Estonia,Estonia,Europe,Northern Europe,45227,FALSE,Tallinn,LVA;RUS
+ETH,Ethiopia,Ethiopia,Africa,Eastern Africa,1104300,TRUE,Addis Ababa,DJI;ERI;KEN;SOM;SSD;SDN
+FIN,Finland,Finland,Europe,Northern Europe,338424,FALSE,Helsinki,NOR;SWE;RUS
+FJI,Fiji,Fiji,Oceania,Melanesia,18272,FALSE,Suva,
+FRA,France,French Republic,Europe,Western Europe,551695,FALSE,Paris,AND;BEL;DEU;ITA;LUX;MCO;ESP;CHE
+GBR,United Kingdom,United Kingdom of Great Britain and Northern Ireland,Europe,Northern Europe,242900,FALSE,London,IRL
+GEO,Georgia,Georgia,Asia,Western Asia,69700,FALSE,Tbilisi,ARM;AZE;RUS;TUR
+GHA,Ghana,Ghana,Africa,Western Africa,238533,FALSE,Accra,BFA;CIV;TGO
+GIB,Gibraltar,Gibraltar,Europe,Southern Europe,6,FALSE,Gibraltar,ESP
+GRC,Greece,Greece,Europe,Southern Europe,131990,FALSE,Athens,ALB;BGR;TUR;MKD
+GRL,Greenland,Greenland,Americas,North America,2166086,FALSE,Nuuk,
+GTM,Guatemala,Guatemala,Americas,Central America,108889,FALSE,Guatemala City,BLZ;SLV;HND;MEX
+HKG,Hong Kong,Hong Kong,Asia,Eastern Asia,1104,FALSE,City of Victoria,CHN
+HND,Honduras,Honduras,Americas,Central America,112492,FALSE,Tegucigalpa,GTM;SLV;NIC
+HRV,Croatia,Croatia,Europe,Southeast Europe,56594,FALSE,Zagreb,BIH;HUN;MNE;SRB;SVN
+HTI,Haiti,Haiti,Americas,Caribbean,27750,FALSE,Port-au-Prince,DOM
+HUN,Hungary,Hungary,Europe,Central Europe,93028,TRUE,Budapest,AUT;HRV;ROU;SRB;SVK;SVN;UKR
+IDN,Indonesia,Indonesia,Asia,South-Eastern Asia,1904569,FALSE,Jakarta,TLS;MYS;PNG
+IND,India,Republic of India,Asia,Southern Asia,3287590,FALSE,New Delhi,AFG;BGD;BTN;MMR;CHN;NPL;PAK
+IRL,Ireland,Ireland,Europe,Northern Europe,70273,FALSE,Dublin,GBR
+IRN,Iran,Islamic Republic of Iran,Asia,Southern Asia,1648195,FALSE,Tehran,ARM;AZE;IRQ;PAK;TUR;TKM;AFG
+IRQ,Iraq,Iraq,Asia,Western Asia,438317,FALSE,Baghdad,IRN;JOR;KWT;SAU;SYR;TUR
+ISL,Iceland,Iceland,Europe,Northern Europe,103000,FALSE,Reykjavik,
+ISR,Israel,Israel,Asia,Western Asia,20770,FALSE,Jerusalem,EGY;JOR;LBN;PSE;SYR
+ITA,Italy,Italian Republic,Europe,Southern Europe,301336,FALSE,Rome,AUT;FRA;SMR;SVN;CHE;VAT
+JAM,Jamaica,Jamaica,Americas,Caribbean,10991,FALSE,Kingston,
+JOR,Jordan,Jordan,Asia,Western Asia,89342,FALSE,Amman,IRQ;ISR;PSE;SAU;SYR
+JPN,Japan,Japan,Asia,Eastern Asia,377930,FALSE,Tokyo,
+KAZ,Kazakhstan,Kazakhstan,Asia,Central Asia,2724900,TRUE,Astana,CHN;KGZ;RUS;TKM;UZB
+KEN,Kenya,Kenya,Africa,Eastern Africa,580367,FALSE,Nairobi,ETH;SOM;SSD;TZA;UGA
+KHM,Cambodia,Cambodia,Asia,South-Eastern Asia,181035,FALSE,Phnom Penh,LAO;THA;VNM
+KOR,South Korea,Republic of Korea,Asia,Eastern Asia,100210,FALSE,Seoul,PRK
+KWT,Kuwait,Kuwait,Asia,Western Asia,17818,FALSE,Kuwait City,IRQ;SAU
+LAO,Laos,Lao People's Democratic Republic,Asia,South-Eastern Asia,236800,TRUE,Vientiane,MMR;KHM;CHN;THA;VNM
+LBN,Lebanon,Lebanon,Asia,Western Asia,10452,FALSE,Beirut,ISR;SYR
+LIE,Liechtenstein,Liechtenstein,Europe,Western Europe,160,TRUE,Vaduz,AUT;CHE
+LKA,Sri Lanka,Sri Lanka,Asia,Southern Asia,65610,FALSE,Colombo;Sri Jayawardenepura Kotte,
+LSO,Lesotho,Lesotho,Africa,Southern Africa,30355,TRUE,Maseru,ZAF
+LTU,Lithuania,Lithuania,Europe,Northern Europe,65300,FALSE,Vilnius,BLR;LVA;POL;RUS
+LUX,Luxembourg,Luxembourg,Europe,Western Europe,2586,TRUE,Luxembourg,BEL;FRA;DEU
+LVA,Latvia,Latvia,Europe,Northern Europe,64559,FALSE,Riga,BLR;EST;LTU;RUS
+MAC,Macau,Macau,Asia,Eastern Asia,30,FALSE,Macau,CHN
+MAR,Morocco,Morocco,Africa,Northern Africa,446550,FALSE,Rabat,DZA;ESH;ESP
+MCO,Monaco,Monaco,Europe,Western Europe,2,FALSE,Monaco,FRA
+MDG,Madagascar,Madagascar,Africa,Eastern Africa,587041,FALSE,Antananarivo,
+MDV,Maldives,Maldives,Asia,Southern Asia,300,FALSE,Malé,
+MEX,Mexico,United Mexican States,Americas,North America,1964375,FALSE,Mexico City,BLZ;GTM;USA
+MLI,Mali,Mali,Africa,Western Africa,1240192,TRUE,Bamako,DZA;BFA;GIN;CIV;MRT;NER;SEN
+MLT,Malta,Malta,Europe,Southern Europe,316,FALSE,Valletta,
+MMR,Myanmar,Myanmar,Asia,South-Eastern Asia,676578,FALSE,Naypyidaw,BGD;CHN;IND;LAO;THA
+MNG,Mongolia,Mongolia,Asia,Eastern Asia,1564110,TRUE,Ulan Bator,CHN;RUS
+MOZ,Mozambique,Mozambique,Africa,Eastern Africa,801590,FALSE,Maputo,MWI;ZAF;SWZ;TZA;ZMB;ZWE
+MUS,Mauritius,Mauritius,Africa,Eastern Africa,2040,FALSE,Port Louis,
+MYS,Malaysia,Malaysia,Asia,South-Eastern Asia,330803,FALSE,Kuala Lumpur,BRN;IDN;THA
+NAM,Namibia,Namibia,Africa,Southern Africa,825615,FALSE,Windhoek,AGO;BWA;ZAF;ZMB
+NER,Niger,Niger,Africa,Western Africa,1267000,TRUE,Niamey,DZA;BEN;BFA;TCD;LBY;MLI;NGA
+NGA,Nigeria,Nigeria,Africa,Western Africa,923768,FALSE,Abuja,BEN;CMR;TCD;NER
+NIC,Nicaragua,Nicaragua,Americas,Central America,130373,FALSE,Managua,CRI;HND
+NLD,Netherlands,Kingdom of the Netherlands,Europe,Western Europe,41850,FALSE,Amsterdam,BEL;DEU
+NOR,Norway,Kingdom of Norway,Europe,Northern Europe,323802,FALSE,Oslo,FIN;SWE;RUS
+NPL,Nepal,Nepal,Asia,Southern Asia,147181,TRUE,Kathmandu,CHN;IND
+NZL,New Zealand,New Zealand,Oceania,Australia and New Zealand,270467,FALSE,Wellington,
+OMN,Oman,Oman,Asia,Western Asia,309500,FALSE,Muscat,SAU;ARE;YEM
+PAK,Pakistan,Pakistan,Asia,Southern Asia,881912,FALSE,Islamabad,AFG;CHN;IND;IRN
+PAN,Panama,Panama,Americas,Central America,75320,FALSE,Panama City,COL;CRI
+PER,Peru,Peru,Americas,South America,1285216,FALSE,Lima,BOL;BRA;CHL;COL;ECU
+PHL,Philippines,Philippines,Asia,South-Eastern Asia,342353,FALSE,Manila,
+PNG,Papua New Guinea,Papua New Guinea,Oceania,Melanesia,462840,FALSE,Port Moresby,IDN
+POL,Poland,Poland,Europe,Central Europe,312679,FALSE,Warsaw,BLR;CZE;DEU;LTU;RUS;SVK;UKR
+PRI,Puerto Rico,Puerto Rico,Americas,Caribbean,8870,FALSE,San Juan,
+PRT,Portugal,Portuguese Republic,Europe,Southern Europe,92090,FALSE,Lisbon,ESP
+PRY,Paraguay,Paraguay,Americas,South America,406752,TRUE,Asunción,ARG;BOL;BRA
+QAT,Qatar,Qatar,Asia,Western Asia,11586,FALSE,Doha,SAU
+ROU,Romania,Romania,Europe,Eastern Europe,238391,FALSE,Bucharest,BGR;HUN;MDA;SRB;UKR
+RUS,Russia,Russian Federation,Europe,Eastern Europe,17098242,FALSE,Moscow,AZE;BLR;CHN;EST;FIN;GEO;KAZ;PRK;LVA;LTU;MNG;NOR;POL;UKR
+RWA,Rwanda,Rwanda,Africa,Eastern Africa,26338,TRUE,Kigali,BDI;COD;TZA;UGA
+SAU,Saudi Arabia,Saudi Arabia,Asia,Western Asia,2149690,FALSE,Riyadh,IRQ;JOR;KWT;OMN;QAT;ARE;YEM
+SDN,Sudan,Sudan,Africa,Northern Africa,1886068,FALSE,Khartoum,CAF;TCD;EGY;ERI;ETH;LBY;SSD
+SEN,Senegal,Senegal,Africa,Western Africa,196722,FALSE,Dakar,GMB;GIN;GNB;MLI;MRT
+SGP,Singapore,Singapore,Asia,South-Eastern Asia,710,FALSE,Singapore,
+SLV,El Salvador,El Salvador,Americas,Central America,21041,FALSE,San Salvador,GTM;HND
+SMR,San Marino,San Marino,Europe,Southern Europe,61,TRUE,City of San Marino,ITA
+SRB,Serbia,Serbia,Europe,Southeast Europe,88361,TRUE,Belgrade,BIH;BGR;HRV;HUN;XKX;MKD;MNE;ROU
+SVK,Slovakia,Slovakia,Europe,Central Europe,49037,TRUE,Bratislava,AUT;CZE;HUN;POL;UKR
+SVN,Slovenia,Slovenia,Europe,Central Europe,20273,FALSE,Ljubljana,AUT;HRV;ITA;HUN
+SWE,Sweden,Kingdom of Sweden,Europe,Northern Europe,450295,FALSE,Stockholm,FIN;NOR
+SWZ,Eswatini,Eswatini,Africa,Southern Africa,17364,TRUE,Mbabane;Lobamba,MOZ;ZAF
+SYR,Syria,Syria,Asia,Western Asia,185180,FALSE,Damascus,IRQ;ISR;JOR;LBN;TUR
+THA,Thailand,Thailand,Asia,South-Eastern Asia,513120,FALSE,Bangkok,MMR;KHM;LAO;MYS
+TTO,Trinidad and Tobago,Trinidad and Tobago,Americas,Caribbean,5130,FALSE,Port of Spain,
+TUN,Tunisia,Tunisia,Africa,Northern Africa,163610,FALSE,Tunis,DZA;LBY
+TUR,Turkey,Republic of Türkiye,Asia,Western Asia,783562,FALSE,Ankara,ARM;AZE;BGR;GEO;GRC;IRN;IRQ;SYR
+TZA,Tanzania,Tanzania,Africa,Eastern Africa,945087,FALSE,Dodoma,BDI;COD;KEN;MWI;MOZ;RWA;UGA;ZMB
+UGA,Uganda,Uganda,Africa,Eastern Africa,241550,TRUE,Kampala,COD;KEN;RWA;SSD;TZA
+UKR,Ukraine,Ukraine,Europe,Eastern Europe,603500,FALSE,Kyiv,BLR;HUN;MDA;POL;ROU;RUS;SVK
+URY,Uruguay,Uruguay,Americas,South America,181034,FALSE,Montevideo,ARG;BRA
+USA,United States,United States of America,Americas,North America,9372610,FALSE,"Washington, D.C.",CAN;MEX
+VEN,Venezuela,Bolivarian Republic of Venezuela,Americas,South America,916445,FALSE,Caracas,BRA;COL;GUY
+VNM,Vietnam,Socialist Republic of Vietnam,Asia,South-Eastern Asia,331212,FALSE,Hanoi,KHM;CHN;LAO
+ZAF,South Africa,Republic of South Africa,Africa,Southern Africa,1221037,FALSE,Pretoria;Bloemfontein;Cape Town,BWA;LSO;MOZ;NAM;SWZ;ZWE
+ZMB,Zambia,Zambia,Africa,Eastern Africa,752612,TRUE,Lusaka,AGO;BWA;COD;MWI;MOZ;NAM;TZA;ZWE
+ZWE,Zimbabwe,Zimbabwe,Africa,Eastern Africa,390757,TRUE,Harare,BWA;MOZ;ZAF;ZMB

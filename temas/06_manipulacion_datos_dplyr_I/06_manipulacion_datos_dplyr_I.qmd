@@ -1,0 +1,554 @@
+---
+title: "Manipulación de datos y variables en R"
+subtitle: "dplyr y el operador pipe"
+author: "Andrea Celico"
+date: "2026"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contenidos"
+    number-sections: true
+    theme: cosmo
+    highlight-style: github
+    code-copy: true
+    embed-resources: true
+lang: es
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+# Objetivos de la sesión
+
+En esta clase vamos a trabajar con **data frames** usando la librería `tidyverse`.
+Aprenderemos a **filtrar, ordenar, seleccionar, transformar y resumir** datos.
+
+Usaremos como ejemplo los vuelos que partieron de Nueva York en 2013 (dataset `flights` de la librería `nycflights13`).
+
+Al terminar deberías ser capaz de:
+
+- Entender la **intuición** detrás de `dplyr`: los datos entran, los datos salen.
+- Usar los cinco verbos básicos: `filter()`, `arrange()`, `select()`, `mutate()` y `summarise()`.
+- Agrupar datos con `group_by()`.
+- Encadenar operaciones con el **pipe** `%>%` y escribir código legible.
+
+
+# La intuición de dplyr
+
+## Una gramática para manipular datos
+
+`dplyr` (parte del `tidyverse`) no es una colección de funciones sueltas: es una **gramática**.
+La idea es que casi cualquier cosa que queramos hacer con una tabla de datos se puede expresar
+combinando unas pocas **acciones elementales**, que llamamos **verbos**.
+
+Cada verbo de `dplyr` funciona siempre igual:
+
+1. El **primer argumento** es un data frame.
+2. Los **argumentos siguientes** describen *qué* queremos hacer, usando los nombres de las columnas
+   directamente (sin comillas, sin `$`).
+3. El **resultado es siempre otro data frame**.
+
+Esta última propiedad es la clave: como la entrada y la salida son del mismo tipo, los verbos se
+pueden **encadenar** unos detrás de otros, igual que montamos una frase con un verbo tras otro.
+
+::: {.callout-tip}
+## La idea en una frase
+Un verbo de `dplyr` es una **función que recibe una tabla y devuelve otra tabla**, un poco más
+cerca de la tabla que necesitamos para nuestro análisis.
+:::
+
+## Los verbos básicos
+
+| Verbo | Qué hace | Qué cambia |
+|-------|----------|------------|
+| `filter()` | Se queda con las **filas** que cumplen una condición | el número de filas |
+| `arrange()` | **Ordena** las filas | el orden de las filas |
+| `select()` | Se queda con algunas **columnas** | el número de columnas |
+| `mutate()` | **Crea** o **modifica** columnas | número o contenido de las columnas |
+| `summarise()` | **Resume** la tabla en estadísticas | colapsa las filas |
+| `group_by()` | Marca grupos para operar **por grupos** | nada visible, pero cambia el comportamiento de los demás |
+
+Una idea importante: **ningún verbo modifica los datos originales**. `dplyr` siempre devuelve una
+tabla *nueva*. Si queremos conservar el resultado, tenemos que **guardarlo en un objeto** con `<-`.
+
+
+# El pipe `%>%` y los comandos consecutivos
+
+## El problema que resuelve el pipe
+
+Imaginemos que queremos, en este orden: (1) quedarnos con los vuelos del 1 de enero,
+(2) quedarnos con unas pocas columnas y (3) ordenarlos por retraso.
+
+Sin pipe tenemos dos opciones, y ninguna es cómoda:
+
+```{r}
+#| eval: false
+# Opción A: crear objetos intermedios que no nos interesan
+paso1 <- filter(flights, month == 1, day == 1)
+paso2 <- select(paso1, year, month, day, dep_delay, arr_delay)
+paso3 <- arrange(paso2, dep_delay)
+
+# Opción B: anidar funciones (se lee de dentro hacia fuera: ¡al revés!)
+arrange(select(filter(flights, month == 1, day == 1),
+               year, month, day, dep_delay, arr_delay),
+        dep_delay)
+```
+
+La opción A nos llena el entorno de objetos basura (`paso1`, `paso2`, ...).
+La opción B se lee desde el paréntesis más interno hacia fuera, justo al contrario del orden en que
+pensamos los pasos.
+
+## Cómo funciona el pipe
+
+El operador `%>%`, conocido como *pipe* (tubería), es una de las piezas centrales del tidyverse.
+Lo que hace es muy simple:
+
+> **`x %>% f(y)` es lo mismo que `f(x, y)`**
+
+Es decir: **lo que está a la izquierda del pipe entra como primer argumento de la función de la
+derecha**. Y como el primer argumento de todos los verbos de `dplyr` es un data frame, esto encaja
+de forma perfecta.
+
+Así, estas dos líneas son equivalentes:
+
+```{r}
+#| eval: false
+filter(flights, month == 1, day == 1)      # sintaxis sin pipe
+flights %>% filter(month == 1, day == 1)   # la misma cosa, con pipe
+```
+
+::: {.callout-note}
+## Cómo leer el pipe
+Lee `%>%` como **"y luego"**. El código
+`flights %>% filter(...) %>% select(...)` se lee: *"toma flights, y luego filtra, y luego
+selecciona columnas"*.
+:::
+
+## Comandos consecutivos: la pipeline
+
+Como cada verbo devuelve un data frame, podemos poner un verbo detrás de otro y construir una
+**secuencia de pasos** (una *pipeline*). La tabla va pasando de un verbo al siguiente, y cada paso
+la transforma un poco:
+
+```
+datos %>%
+  funcion1(...) %>%    # recibe "datos" y devuelve una tabla
+  funcion2(...) %>%    # recibe el resultado del paso anterior
+  funcion3(...)        # recibe el resultado anterior y da el resultado final
+```
+
+Reglas prácticas para escribir pipelines:
+
+- El `%>%` va **al final de la línea**, nunca al principio de la siguiente.
+- Cada verbo en **su propia línea**, con indentación: el código se lee como una receta.
+- Dentro de la pipeline **ya no repetimos el nombre del data frame**: va implícito.
+- Si queremos guardar el resultado, asignamos **al principio**: `resultado <- datos %>% ...`
+
+```{r}
+#| eval: false
+# La estructura completa
+resultado <- flights %>%
+  filter(month == 1) %>%
+  select(year, month, day, dep_delay) %>%
+  arrange(desc(dep_delay))
+```
+
+::: {.callout-warning}
+## Atención: el pipe no guarda nada
+Una pipeline **muestra** su resultado pero no lo guarda. Si no usamos `<-`, el resultado se imprime
+y se pierde. Y el objeto original (`flights`) nunca se modifica.
+:::
+
+A partir de aquí usaremos **siempre esta sintaxis**: primero el data frame, luego los verbos
+encadenados con `%>%`.
+
+
+# Importar un dataframe predefinido
+
+## Datos de vuelos de NYC en 2013
+
+Vamos a instalar y cargar la librería que contiene los datos de vuelos:
+
+```{r}
+# Librería con datos de vuelos desde NYC en 2013
+# install.packages("nycflights13") # Solo la primera vez
+library(nycflights13)
+library(tidyverse)
+
+# Asignamos los datos a un objeto llamado flights
+flights <- nycflights13::flights
+```
+
+Antes de manipular nada, siempre conviene mirar los datos:
+
+```{r}
+# Dimensiones y nombres de las columnas
+dim(flights)
+names(flights)
+```
+
+```{r}
+# Primeras filas
+flights %>% head(5)
+```
+
+
+# Filtrar observaciones: `filter()`
+
+Supongamos que nos interesa trabajar con subconjuntos del dataset.
+`filter()` selecciona **filas** (observaciones) que cumplen una o varias condiciones lógicas.
+Es decir, nos ayuda a *filtrar* datos de acuerdo a criterios que nosotros definimos.
+
+```{r}
+# Vuelos del mes de enero
+flights %>%
+  filter(month == 1) %>%
+  head(3)
+```
+
+Cuando separamos varias condiciones con **comas**, `filter()` exige que se cumplan **todas** a la
+vez (es un "y" lógico):
+
+```{r}
+# Vuelos del 1 de enero (mes == 1 Y día == 1)
+jan1 <- flights %>%
+  filter(month == 1, day == 1)
+
+jan1 %>% head(3)
+```
+
+## Operadores lógicos
+
+| Operador | Significado |
+|----------|-------------|
+| `==` | igual a |
+| `!=` | distinto de |
+| `<`, `<=`, `>`, `>=` | comparaciones |
+| `&` | y (las dos condiciones) |
+| `\|` | o (alguna de las dos) |
+| `%in%` | pertenece a un conjunto de valores |
+
+```{r}
+# Vuelos que salieron en noviembre o diciembre
+nov_dic <- flights %>%
+  filter(month == 11 | month == 12)
+
+nov_dic %>% head(3)
+```
+
+```{r}
+# Alternativa más corta y legible con %in%
+nov_dic <- flights %>%
+  filter(month %in% c(11, 12))
+
+nov_dic %>% head(3)
+```
+
+```{r}
+# Vuelos que NO salieron en enero
+flights %>%
+  filter(month != 1) %>%
+  head(3)
+```
+
+```{r}
+# Vuelos con retrasos de llegada y salida menores a 2 horas (120 minutos)
+flights %>%
+  filter(arr_delay <= 120, dep_delay <= 120) %>%
+  head(3)
+```
+
+::: {.callout-important}
+## `=` no es `==`
+`=` sirve para asignar valores a argumentos; `==` es la comparación "es igual a".
+Escribir `flights %>% filter(month = 1)` da error.
+:::
+
+
+# Ordenar observaciones: `arrange()`
+
+La función `arrange()` nos permite reordenar filas según una o varias variables.
+
+```{r}
+# Orden por año, mes y día
+flights %>%
+  arrange(year, month, day) %>%
+  head(3)
+```
+
+## Orden descendente
+
+```{r}
+# Para usar un orden descendente envolvemos la variable en desc()
+flights %>%
+  arrange(desc(dep_delay)) %>%
+  head(3)
+```
+
+```{r}
+# Podemos combinar criterios: por mes y, dentro de cada mes, mayor retraso primero
+flights %>%
+  arrange(month, desc(dep_delay)) %>%
+  head(3)
+```
+
+::: {.callout-warning}
+## El orden no se guarda solo
+Para que el nuevo orden se conserve hay que **atribuirlo a un objeto**.
+:::
+
+```{r}
+ordered_df <- flights %>%
+  arrange(desc(dep_delay))
+```
+
+## Ordenar valores faltantes (NA)
+
+```{r}
+# Creamos un ejemplo pequeño para ver cómo R ordena los valores faltantes
+df <- tibble(x = c(5, 2, NA))
+
+df %>% arrange(x)
+```
+
+```{r}
+df %>% arrange(desc(x))
+# Notamos que los valores NA (faltantes) se colocan al final por defecto,
+# tanto en orden ascendente como descendente.
+```
+
+```{r}
+# Si queremos que los missing aparezcan al principio:
+df %>% arrange(desc(is.na(x)))
+```
+
+
+# Seleccionar columnas: `select()`
+
+`select()` se usa para quedarnos con algunas **columnas** de un data frame.
+
+```{r}
+# Seleccionar columnas por el nombre
+flights %>%
+  select(year, month, day) %>%
+  head(3)
+```
+
+```{r}
+# Seleccionar todas las columnas entre year y day (inclusive)
+flights %>%
+  select(year:day) %>%
+  head(3)
+```
+
+```{r}
+# Todas las columnas EXCEPTO las que van de year a day
+flights %>%
+  select(-(year:day)) %>%
+  head(3)
+```
+
+## Funciones de ayuda para seleccionar columnas
+
+| Función | Qué selecciona |
+|---------|----------------|
+| `starts_with("abc")` | nombres que empiezan con "abc" |
+| `ends_with("xyz")` | nombres que terminan en "xyz" |
+| `contains("ijk")` | nombres que contienen "ijk" |
+| `matches("(.)\\1")` | variables que cumplen una expresión regular |
+| `num_range("x", 1:3)` | selecciona `x1`, `x2`, `x3` |
+
+```{r}
+# Todas las columnas de retrasos
+flights %>%
+  select(ends_with("delay")) %>%
+  head(3)
+```
+
+
+# Crear y modificar variables: `mutate()`
+
+La función `mutate()` nos permite **crear nuevas variables** o **modificar variables existentes**
+dentro de un data frame. Es muy útil cuando necesitamos calcular indicadores adicionales a partir
+de los datos originales.
+
+## Crear nuevas columnas
+
+Primero nos quedamos con algunas columnas del dataset `flights` que nos interesan: las columnas de
+año a día, las que terminan con "delay", la distancia y el tiempo de vuelo.
+
+```{r}
+flights_sml <- flights %>%
+  select(year:day, ends_with("delay"), distance, air_time)
+
+flights_sml %>% head(3)
+```
+
+Ahora usamos `mutate()` para crear nuevas variables:
+
+```{r}
+prueba <- flights_sml %>%
+  mutate(
+    gain  = dep_delay - arr_delay,       # diferencia entre retraso de salida y llegada
+    speed = distance / air_time * 60     # velocidad promedio (millas por hora)
+  )
+
+prueba %>%
+  select(gain, speed) %>%
+  head(3)
+```
+
+Fíjate en que dentro de `mutate()` las variables se calculan **en orden**: podemos usar una columna
+que acabamos de crear para calcular la siguiente.
+
+## Modificar variables existentes
+
+Si usamos `mutate()` con una columna que ya existe, la **sobrescribe** con el nuevo cálculo:
+
+```{r}
+prueba2 <- flights_sml %>%
+  mutate(air_time = air_time / 60)   # convertimos de minutos a horas
+
+prueba2 %>%
+  select(air_time) %>%
+  head(3)
+```
+
+Podemos aplicar funciones y operaciones directamente dentro de `mutate()`:
+
+```{r}
+prueba3 <- flights_sml %>%
+  mutate(
+    horas        = air_time / 60,
+    velocidad_km = (distance * 1.60934) / (air_time / 60)
+  )
+
+prueba3 %>%
+  select(horas, velocidad_km) %>%
+  head(3)
+```
+
+
+# Resumir datos: `summarise()` y `group_by()`
+
+En análisis de datos, muchas veces no necesitamos ver **cada fila individual**, sino
+**resúmenes agregados** que nos den información general.
+Aquí es donde entran las funciones `group_by()` y `summarise()` del tidyverse.
+
+## La función `summarise()`
+
+`summarise()` sirve para **colapsar un data frame en una sola fila**, calculando estadísticas como
+promedio, suma, mínimo, máximo, etc.
+
+```{r}
+# Retraso promedio de salida (dep_delay) de todos los vuelos.
+# na.rm = TRUE indica que ignoramos los valores faltantes (NA).
+flights %>%
+  summarise(delay = mean(dep_delay, na.rm = TRUE), 
+            delay_median = median(dep_delay, na.rm=T))
+```
+
+## Agrupar datos
+
+A menudo queremos resumir los datos **por grupos**: por día, por mes o por destino.
+Para eso usamos `group_by()`, que marca una o varias variables como agrupadoras.
+Con el pipe, agrupar y resumir se convierte en un único gesto de dos pasos:
+
+```{r}
+# Retraso medio de salida por día
+flights %>%
+  group_by(year, month, day) %>%
+  summarise(delay = mean(dep_delay, na.rm = TRUE))
+# El resultado tiene una fila por cada día, en lugar de una fila por vuelo.
+```
+
+Ejemplo por destino, con varios estadísticos a la vez:
+
+```{r}
+delay <- flights %>%
+  group_by(dest) %>%
+  summarise(
+    count = n(),                           # número de vuelos por destino
+    dist  = mean(distance,  na.rm = TRUE), # distancia promedio vuelos con destino X
+    delay = mean(arr_delay, na.rm = TRUE)  # retraso promedio de llegada de los vuelos con destino X
+  )
+
+# para ver la estructura de destinos
+#library(summarytools)
+#freq(flights$dest)
+
+delay %>% head(5)
+```
+
+**Conceptos clave**
+
+- `group_by()` organiza los datos en grupos, pero no cambia el número de filas hasta que aplicamos
+  `summarise()`.
+- `summarise()` reduce cada grupo a una fila, aplicando funciones estadísticas.
+- Se pueden combinar múltiples funciones dentro de `summarise()` para generar resúmenes completos
+  de un dataset.
+- `n()` cuenta observaciones y solo tiene sentido dentro de `summarise()` (o `mutate()`).
+- Siempre es buena práctica filtrar o limpiar los datos antes o después de resumir, según lo que
+  necesitemos analizar.
+
+
+# Pipelines completas: poner todo junto
+
+Ahora que conocemos los verbos, el pipe nos permite leer un análisis completo de arriba a abajo,
+como una secuencia de pasos lógicos.
+
+```{r}
+flights %>%
+  filter(month == 1, day == 1) %>%
+  select(year, month, day, dep_delay, arr_delay) %>%
+  arrange(dep_delay) %>%
+  head(5)
+# Se lee como: "de flights toma los vuelos del 1 de enero, y luego quédate solo con estas
+# columnas, y luego ordénalos por retraso de salida".
+```
+
+Agrupar, resumir, filtrar y ordenar en una sola pipeline:
+
+```{r}
+new <- flights %>%
+  group_by(dest) %>%                               # agrupa por destino
+  summarise(
+    total_vuelos = n(),                            # número de vuelos por destino
+    retraso_prom = mean(arr_delay, na.rm = TRUE),  # retraso promedio
+    dist_prom    = mean(distance,  na.rm = TRUE)   # distancia promedio
+  ) %>%
+  filter(total_vuelos > 50) %>%                    # destinos con más de 50 vuelos
+  arrange(desc(retraso_prom))                      # de mayor a menor retraso promedio
+
+new %>% head(5)
+```
+
+Fíjate en un detalle importante: el `filter()` de esta pipeline actúa **sobre la tabla ya
+resumida**, no sobre los vuelos. El orden de los pasos importa.
+
+Crear variables y ordenar:
+
+```{r}
+flights %>%
+  mutate(
+    gain  = dep_delay - arr_delay,          # tiempo ganado o perdido
+    speed = distance / air_time * 60,        # velocidad promedio en mph
+    speed = speed/100
+  ) %>%
+  select(year, month, day, gain, speed) %>% # columnas de interés
+  arrange(desc(speed)) 
+```
+
+
+# Resumen de la sesión
+
+- `dplyr` es una **gramática de manipulación de datos**: pocos verbos, todos con la misma forma
+  (entra una tabla, sale una tabla).
+- El pipe `%>%` encadena esos verbos: `x %>% f(y)` equivale a `f(x, y)` y se lee **"y luego"**.
+- Dentro de una pipeline no repetimos el nombre del data frame.
+- Nada se guarda si no lo asignamos con `<-`, y los datos originales nunca se modifican.
+- `filter()` para filas, `select()` para columnas, `arrange()` para el orden, `mutate()` para
+  nuevas variables, `group_by()` + `summarise()` para resúmenes por grupos.

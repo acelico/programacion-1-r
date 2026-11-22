@@ -1,0 +1,33 @@
+# R / RStudio / Quarto
+.Rhistory
+.RData
+.RDataTmp
+.Rproj.user/
+.quarto/
+*_cache/
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+.vscode/
+.claude/
+CLAUDE.md
+
+# Protección: este repositorio NO debe contener material de evaluación ni datos de alumnos
+*[Ee]xam*
+*[Mm]idterm*
+*[Pp]arcial*
+*[Aa]ssignment*
+*[Tt]area*
+*[Ee]valuaci*
+*[Cc]alificaci*
+*[Aa]ctas*
+*[Nn]otas*
+*[Rr]ubric*
+*[Rr]úbrica*
+*[Rr]esultados*
+*[Cc]orregid*
+*DOCENTE*
+*[Aa]lumnos*

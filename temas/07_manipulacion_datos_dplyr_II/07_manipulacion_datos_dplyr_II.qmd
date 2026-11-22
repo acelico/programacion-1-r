@@ -1,0 +1,378 @@
+---
+title: "Manipulación de datos y variables en R (II)"
+subtitle: "Práctica con dplyr y pipelines"
+author: "Andrea Celico"
+date: "2026"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contenidos"
+    number-sections: true
+    theme: cosmo
+    highlight-style: github
+    code-copy: true
+    embed-resources: true
+lang: es
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+# Objetivos de la sesión
+
+Seguimos trabajando con **data frames** y la librería `tidyverse`, usando otra vez los vuelos que
+partieron de Nueva York en 2013 (dataset `flights` de la librería `nycflights13`).
+
+En esta segunda parte vamos a:
+
+- Repasar la **intuición** de `dplyr` y del operador **pipe** `%>%`.
+- Practicar variantes de `filter()`, `arrange()`, `select()` y `mutate()`.
+- Construir **pipelines completas** que combinan varios verbos, incluyendo `group_by()` y
+  `summarise()`.
+
+
+# Repaso: la intuición de dplyr
+
+`dplyr` es una **gramática de manipulación de datos**. En lugar de aprender una función distinta
+para cada problema, aprendemos unos pocos **verbos** que siempre se comportan igual:
+
+1. El **primer argumento** es un data frame.
+2. Los argumentos siguientes usan los **nombres de las columnas** directamente.
+3. El resultado es **siempre otro data frame**.
+
+Por eso los verbos se pueden **encadenar**: la salida de uno sirve de entrada al siguiente.
+
+| Función | Qué hace |
+|---------|----------|
+| `filter()` | Selecciona filas por condición |
+| `arrange()` | Ordena filas |
+| `select()` | Selecciona columnas |
+| `mutate()` | Crea o modifica columnas |
+| `summarise()` | Colapsa la tabla en estadísticas |
+| `group_by()` | Agrupa para operar por grupos |
+
+::: {.callout-important}
+## Los datos originales no se tocan
+Ningún verbo modifica `flights`. Cada verbo devuelve una tabla nueva, y si queremos conservarla
+hay que guardarla con `<-`.
+:::
+
+
+# Repaso: el pipe y los comandos consecutivos
+
+El operador `%>%` (*pipe*) hace una sola cosa:
+
+> **`x %>% f(y)` es lo mismo que `f(x, y)`**
+
+Lo de la izquierda entra como **primer argumento** de la función de la derecha. Como el primer
+argumento de los verbos de `dplyr` es un data frame, podemos escribir los pasos **en el mismo orden
+en que los pensamos** y leer `%>%` como **"y luego"**:
+
+```
+datos %>%
+  funcion1(...) %>%    # recibe "datos" y devuelve una tabla
+  funcion2(...) %>%    # recibe el resultado del paso anterior
+  funcion3(...)        # devuelve el resultado final
+```
+
+Comparemos las dos formas de escribir lo mismo:
+
+```{r}
+#| eval: false
+# Sin pipe: hay que repetir el nombre del data frame en cada paso
+# y crear objetos intermedios que no nos interesan
+paso1 <- filter(flights, month == 1)
+paso2 <- select(paso1, year, month, day, dep_delay)
+
+# Con pipe: una secuencia de pasos, sin objetos intermedios
+flights %>%
+  filter(month == 1) %>%
+  select(year, month, day, dep_delay)
+```
+
+Reglas prácticas: el `%>%` al **final de la línea**, un verbo **por línea**, el nombre del data
+frame **solo una vez al principio**, y la asignación `<-` delante si queremos guardar el resultado.
+
+En este notebook usaremos **siempre** esta sintaxis.
+
+
+# Punto de partida
+
+```{r}
+# install.packages("nycflights13") # Solo la primera vez
+library(nycflights13)
+library(tidyverse)
+
+flights <- nycflights13::flights
+
+# Subconjunto de columnas que usaremos en los ejemplos de mutate()
+flights_sml <- flights %>%
+  select(year:day, ends_with("delay"), distance, air_time)
+
+flights_sml %>% head(3)
+```
+
+
+# `filter()`: condiciones múltiples
+
+Varias condiciones separadas por **comas** se cumplen todas a la vez ("y" lógico).
+
+```{r}
+# Vuelos de enero
+flights %>%
+  filter(month == 1) %>%
+  head(3)
+```
+
+```{r}
+# Vuelos del 1 de enero
+flights %>%
+  filter(month == 1, day == 1) %>%
+  head(3)
+```
+
+```{r}
+# Noviembre o diciembre, con el operador | ("o")
+flights %>%
+  filter(month == 11 | month == 12) %>%
+  head(3)
+```
+
+```{r}
+# La misma cosa, más corta, con %in%
+flights %>%
+  filter(month %in% c(11, 12)) %>%
+  head(3)
+```
+
+## Negación y rangos
+
+```{r}
+# Vuelos que NO salieron en enero
+flights %>%
+  filter(month != 1) %>%
+  head(3)
+```
+
+```{r}
+# Retrasos de llegada y de salida menores a 2 horas
+flights %>%
+  filter(arr_delay <= 120, dep_delay <= 120) %>%
+  head(3)
+```
+
+
+# `arrange()`: orden y valores faltantes
+
+```{r}
+# Orden por año, mes y día
+flights %>%
+  arrange(year, month, day) %>%
+  head(3)
+```
+
+```{r}
+# Orden descendente por retraso de salida
+flights %>%
+  arrange(desc(dep_delay)) %>%
+  head(3)
+```
+
+Los valores `NA` siempre quedan al **final** en `arrange()`, tanto en orden ascendente como
+descendente:
+
+```{r}
+df <- tibble(x = c(5, 2, NA))
+
+df %>% arrange(x)          # NA al final
+```
+
+```{r}
+df %>% arrange(desc(x))    # NA también al final
+```
+
+```{r}
+df %>% arrange(desc(is.na(x)))   # NA al principio
+```
+
+::: {.callout-warning}
+## Recuerda
+`arrange()` no reordena `flights`: devuelve una tabla ordenada. Si la queremos conservar,
+`ordered_df <- flights %>% arrange(desc(dep_delay))`.
+:::
+
+
+# `select()`: variantes
+
+```{r}
+# Columnas concretas por nombre
+flights %>%
+  select(year, month, day) %>%
+  head(3)
+```
+
+```{r}
+# Todas las columnas entre year y day
+flights %>%
+  select(year:day) %>%
+  head(3)
+```
+
+```{r}
+# Todas excepto las que van de year a day
+flights %>%
+  select(-(year:day)) %>%
+  head(3)
+```
+
+```{r}
+# Con funciones de ayuda: todas las columnas de retrasos
+flights %>%
+  select(ends_with("delay")) %>%
+  head(3)
+```
+
+| Función | Qué selecciona |
+|---------|----------------|
+| `starts_with("abc")` | nombres que empiezan con "abc" |
+| `ends_with("xyz")` | nombres que terminan en "xyz" |
+| `contains("ijk")` | nombres que contienen "ijk" |
+| `matches("(.)\\1")` | variables que cumplen una expresión regular |
+| `num_range("x", 1:3)` | selecciona `x1`, `x2`, `x3` |
+
+
+# `mutate()`: nuevas variables
+
+```{r}
+prueba <- flights_sml %>%
+  mutate(
+    gain      = dep_delay - arr_delay,     # diferencia entre retraso de salida y llegada
+    speed_mph = distance / air_time * 60   # velocidad promedio en millas por hora
+  )
+
+prueba %>%
+  select(gain, speed_mph) %>%
+  head(5)
+```
+
+## Modificar una columna existente
+
+Si el nombre ya existe, `mutate()` **sobrescribe** la columna:
+
+```{r}
+prueba2 <- flights_sml %>%
+  mutate(air_time = air_time / 60)   # de minutos a horas
+
+prueba2 %>%
+  select(air_time) %>%
+  head(5)
+```
+
+## Funciones y operaciones dentro de `mutate()`
+
+```{r}
+prueba3 <- flights_sml %>%
+  mutate(
+    horas        = air_time / 60,
+    velocidad_km = (distance * 1.60934) / (air_time / 60)
+  )
+
+prueba3 %>%
+  select(horas, velocidad_km) %>%
+  head(5)
+```
+
+
+# `group_by()` + `summarise()`
+
+`summarise()` colapsa la tabla en estadísticas; `group_by()` hace que ese resumen se calcule
+**por grupos**. Con el pipe, los dos pasos se leen como una sola frase.
+
+```{r}
+# Retraso medio de salida de todos los vuelos
+flights %>%
+  summarise(delay = mean(dep_delay, na.rm = TRUE))
+```
+
+```{r}
+# Retraso medio de salida por día
+flights %>%
+  group_by(year, month, day) %>%
+  summarise(delay = mean(dep_delay, na.rm = TRUE)) %>%
+  head(5)
+```
+
+```{r}
+# Varios estadísticos por destino
+flights %>%
+  group_by(dest) %>%
+  summarise(
+    vuelos = n(),                           # número de vuelos por destino
+    dist   = mean(distance,  na.rm = TRUE), # distancia promedio
+    delay  = mean(arr_delay, na.rm = TRUE)  # retraso promedio de llegada
+  ) %>%
+  head(5)
+```
+
+**Conceptos clave**
+
+- `group_by()` no cambia el número de filas: solo marca los grupos.
+- `summarise()` reduce cada grupo a una fila.
+- `na.rm = TRUE` es casi siempre necesario: si hay un solo `NA`, la media sale `NA`.
+
+
+# Pipelines completas
+
+## Filtrar, seleccionar y ordenar
+
+```{r}
+flights %>%
+  filter(month == 1, day == 1) %>%
+  select(year, month, day, dep_delay, arr_delay) %>%
+  arrange(dep_delay) %>%
+  head(5)
+```
+
+## Resumen por destino
+
+```{r}
+new <- flights %>%
+  group_by(dest) %>%
+  summarise(
+    total_vuelos = n(),
+    retraso_prom = mean(arr_delay, na.rm = TRUE),
+    dist_prom    = mean(distance,  na.rm = TRUE)
+  ) %>%
+  filter(total_vuelos > 50) %>%       # destinos con más de 50 vuelos
+  arrange(desc(retraso_prom))         # de mayor a menor retraso promedio
+
+new %>% head(5)
+```
+
+Aquí el `filter()` actúa **sobre la tabla resumida** (un destino por fila), no sobre los vuelos.
+Si lo pusiéramos antes del `group_by()`, la pregunta sería otra: **el orden de los pasos importa**.
+
+## Crear variables y ordenar
+
+```{r}
+flights %>%
+  mutate(
+    gain  = dep_delay - arr_delay,          # tiempo ganado o perdido
+    speed = distance / air_time * 60        # velocidad promedio en mph
+  ) %>%
+  select(year, month, day, gain, speed) %>% # columnas de interés
+  arrange(desc(speed)) %>%                  # de mayor a menor velocidad
+  head(5)
+```
+
+
+# Resumen de la sesión
+
+- Los verbos de `dplyr` siempre reciben una tabla y devuelven otra: por eso se encadenan.
+- `%>%` se lee **"y luego"** y pasa el resultado como primer argumento del verbo siguiente.
+- El nombre del data frame aparece **una sola vez**, al principio de la pipeline.
+- El **orden de los pasos** cambia el resultado: filtrar antes o después de resumir no es lo mismo.
+- Sin `<-` el resultado solo se imprime; los datos originales nunca se modifican.

@@ -1,0 +1,229 @@
+---
+title: "Modificaciones Básicas de Datos"
+subtitle: "Limpieza, transformación y análisis de consumo eléctrico"
+author: "Andrea Celico"
+date: "2026"
+format:
+  beamer:
+    theme: Madrid
+    aspectratio: 169
+    fontsize: 9pt
+    code-block-font-size: \footnotesize
+    slide-level: 2
+    highlight-style: github
+    header-includes: |
+      \usepackage{tcolorbox}
+      \tcbuselibrary{skins,breakable}
+      \AtBeginDocument{
+        \renewenvironment{Shaded}{%
+          \begin{tcolorbox}[colback=gray!10!white, colframe=gray!40!black, boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt]%
+        }{%
+          \end{tcolorbox}%
+        }
+      }
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| include: false
+options(max.print = 20, tibble.print_max = 5, tibble.print_min = 5)
+knitr::knit_hooks$set(output = function(x, options) {
+  paste0(
+    '\\begin{tcolorbox}[colback=orange!8!white, colframe=orange!60!black,',
+    ' boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt,',
+    ' fontupper=\\footnotesize\\ttfamily]\n',
+    '\\begin{verbatim}\n', x,
+    '\\end{verbatim}\n\\end{tcolorbox}\n'
+  )
+})
+library(tidyverse)
+```
+
+## Contexto: consumo eléctrico municipal
+
+Dataset real: consumo eléctrico anual por municipio del País Vasco (2002–2015).
+
+Retos de este dataset:
+
+- Cabecera desplazada (las primeras 33 filas no son datos)
+- Separador `;` en lugar de `,`
+- Números con formato europeo: `"7.562,88"` → debe ser `7562.88`
+
+## Cargar un CSV con formato especial
+
+```{r}
+#| eval: false
+rm(list = ls())
+
+# Intento incorrecto (da error o datos mal leídos)
+datos <- read.csv("consumoelectricov1.csv")
+
+# Correcto: indicamos dónde empiezan los datos y el separador
+datos <- read.csv("consumoelectricov1.csv",
+                  skip = 33,
+                  sep  = ";")
+```
+
+\begin{alertblock}{Problema}
+Al cargarlo, todas las columnas numéricas son de tipo \texttt{character} porque R no reconoce la coma como decimal.
+\end{alertblock}
+
+## Limpiar formato numérico europeo
+
+Convertir `"7.562,88"` a `7562.88`:
+
+```{r}
+#| eval: false
+# Paso 1: eliminar el punto de miles
+datos$X2015 <- gsub("\\.", "", datos$X2015)
+# "7.562,88" → "7562,88"
+
+# Paso 2: reemplazar la coma decimal por punto
+datos$X2015 <- gsub(",", ".", datos$X2015)
+# "7562,88" → "7562.88"
+
+# Paso 3: convertir a numérico
+datos$X2015 <- as.numeric(datos$X2015)
+```
+
+## Solución generalizada con `mutate` + `across`
+
+```{r}
+#| eval: false
+# Aplicar la limpieza a todas las columnas numéricas (columnas 4 a 16)
+datos <- datos %>%
+  mutate(across(4:16,
+    ~ as.numeric(gsub(",", ".", gsub("\\.", "", .)))))
+```
+
+`across()` aplica una función a múltiples columnas a la vez.
+
+## Crear una variable de provincia
+
+Los códigos municipales identifican la provincia:
+
+```{r}
+#| eval: false
+datos$provincia <- "XXX"
+
+datos$provincia[datos$Codigo.municipio <= 15000]  <- "Alava"
+datos$provincia[datos$Codigo.municipio > 15000 &
+                datos$Codigo.municipio < 40000]    <- "Gipuzkoa"
+datos$provincia[datos$Codigo.municipio > 40000]   <- "Bizkaia"
+
+table(datos$provincia)
+```
+
+## Calcular promedios
+
+```{r}
+#| eval: false
+# Consumo medio por municipio (promedio por fila)
+datos$promedio <- rowMeans(datos[, 3:16])
+
+# Consumo medio por año (promedio por columna)
+medias_anuales <- colMeans(datos[, 3:16], na.rm = TRUE)
+```
+
+## Clasificar municipios: R base vs. tidyverse
+
+```{r}
+#| eval: false
+# R base
+datos$pueblociudad <- ifelse(datos$X2015 > 50000, "Ciudad", "Pueblo")
+
+# tidyverse: case_when (permite más de dos condiciones)
+datos <- datos %>%
+  mutate(pueblociudad = case_when(
+    X2015 > 50000  ~ "Ciudad",
+    X2015 <= 50000 ~ "Pueblo",
+    TRUE           ~ NA_character_
+  ))
+```
+
+## Identificar extremos
+
+```{r}
+#| eval: false
+# 20 municipios con mayor consumo en 2015 (R base)
+maximos <- datos[order(datos$X2015, decreasing = TRUE)[1:20], ]
+
+# Con tidyverse
+datos_maximos <- datos %>% slice_max(X2015, n = 20)
+datos_minimos <- datos %>% slice_min(X2015, n = 20)
+```
+
+## Filtrar por provincia
+
+```{r}
+#| eval: false
+datosBizkaia  <- datos[datos$provincia == "Bizkaia",  ]
+datosAlava    <- datos[datos$provincia == "Alava",    ]
+datosGipuzkoa <- datos[datos$provincia == "Gipuzkoa", ]
+
+# Con tidyverse
+datosBizkaia <- datos %>% filter(provincia == "Bizkaia")
+```
+
+## Municipios con mayor/menor consumo medio
+
+```{r}
+#| eval: false
+municipio_min <- datos$Municipio[which.min(datos$promedio)]
+municipio_max <- datos$Municipio[which.max(datos$promedio)]
+
+# Con tidyverse
+datos %>%
+  select(provincia, Municipio, promedio) %>%
+  filter(promedio == max(promedio, na.rm = TRUE))
+```
+
+## Clasificar por percentiles con `case_when`
+
+```{r}
+#| eval: false
+prov_percent <- datos %>%
+  group_by(provincia) %>%
+  mutate(
+    p33 = quantile(promedio, 0.33, na.rm = TRUE),
+    p66 = quantile(promedio, 0.66, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  mutate(consumoProvincia = case_when(
+    promedio < p33               ~ "Bajo",
+    promedio >= p33 & promedio < p66 ~ "Medio",
+    promedio >= p66              ~ "Alto"
+  ))
+```
+
+## Diferencias temporales
+
+```{r}
+#| eval: false
+datos <- datos %>%
+  mutate(dif1502 = X2015 - X2002) %>%
+  arrange(dif1502)
+
+# 10 municipios con menor incremento
+datos %>% select(2, 3, 16, dif1502) %>% slice_head(n = 10)
+
+# 10 municipios con mayor incremento
+datos %>% select(2, 3, 16, dif1502) %>% slice_tail(n = 10)
+```
+
+## Preguntas para reflexionar
+
+- ¿Qué otras variables se podrían construir?
+  - Crecimiento porcentual del consumo
+  - Desviación estándar temporal
+  - Promedio por provincia
+
+- ¿Cómo visualizarías el consumo por provincia?
+
+- ¿Cómo representarías la serie histórica de Bizkaia?
+
+- Escribe una función que visualice la serie temporal de cada provincia (un gráfico por provincia).

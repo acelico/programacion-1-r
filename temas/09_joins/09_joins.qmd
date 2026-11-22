@@ -1,0 +1,286 @@
+---
+title: "Joins en R con dplyr"
+subtitle: "Combinar datos de múltiples fuentes"
+author: "Andrea Celico"
+date: "2026"
+format:
+  beamer:
+    theme: Madrid
+    aspectratio: 169
+    fontsize: 9pt
+    code-block-font-size: \footnotesize
+    slide-level: 2
+    highlight-style: github
+    header-includes: |
+      \usepackage{tcolorbox}
+      \tcbuselibrary{skins,breakable}
+      \AtBeginDocument{
+        \renewenvironment{Shaded}{%
+          \begin{tcolorbox}[colback=gray!10!white, colframe=gray!40!black, boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt]%
+        }{%
+          \end{tcolorbox}%
+        }
+      }
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| include: false
+options(max.print = 20, tibble.print_max = 5, tibble.print_min = 5)
+knitr::knit_hooks$set(output = function(x, options) {
+  paste0(
+    '\\begin{tcolorbox}[colback=orange!8!white, colframe=orange!60!black,',
+    ' boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt,',
+    ' fontupper=\\footnotesize\\ttfamily]\n',
+    '\\begin{verbatim}\n', x,
+    '\\end{verbatim}\n\\end{tcolorbox}\n'
+  )
+})
+library(tidyverse)
+library(lubridate)
+```
+
+## ¿Cuándo necesitamos un join?
+
+Un **join** combina dos data frames usando una columna clave común.
+
+| Caso de uso | Ejemplo |
+|-------------|---------|
+| Combinar datasets relacionados | Clientes + Compras |
+| Enriquecer con información adicional | Estudiantes + Notas |
+| Filtrar por coincidencias | Empleados con/sin salario |
+| Normalizar datos | Evitar duplicación en tablas |
+
+## Los datos de ejemplo
+
+```{r}
+df_employees <- data.frame(
+  Employee_ID = 1:8,
+  Name        = c("Alice","Bob","Charlie","David",
+                  "Eva","Frank","Grace","Hank"),
+  Department  = c("HR","IT","Finance","IT",
+                  "HR","Finance","IT","Sales")
+)
+
+df_salaries <- data.frame(
+  Employee_ID = c(3, 4, 5, 6, 7, 9, 10),
+  Salary      = c(60000, 75000, 50000, 80000,
+                  65000, 70000, 72000)
+)
+```
+
+## El data frame de empleados
+
+```{r}
+print(df_employees)
+```
+
+## El data frame de salarios
+
+```{r}
+print(df_salaries)
+```
+
+## Tipos de join
+
+| Join | Resultado |
+|------|-----------|
+| `inner_join` | Solo filas coincidentes en ambos |
+| `left_join`  | Todas las filas de x + coincidencias de y |
+| `right_join` | Todas las filas de y + coincidencias de x |
+| `full_join`  | Todas las filas de x e y |
+
+## `inner_join`: solo coincidencias
+
+```{r}
+df_inner <- inner_join(df_employees, df_salaries, by = "Employee_ID")
+print(df_inner)
+```
+
+IDs 3, 4, 5, 6, 7 están en ambos data frames → solo ellos aparecen.
+
+## `left_join`: todas las filas de x
+
+```{r}
+df_left <- left_join(df_employees, df_salaries, by = "Employee_ID")
+print(df_left)
+```
+
+IDs 1, 2, 8 (sin salario) quedan con `NA`.
+
+## `right_join`: todas las filas de y
+
+```{r}
+df_right <- right_join(df_employees, df_salaries, by = "Employee_ID")
+print(df_right)
+```
+
+IDs 9, 10 (sin empleado conocido) quedan con `NA`.
+
+## `full_join`: todas las filas de ambos
+
+```{r}
+df_full <- full_join(df_employees, df_salaries, by = "Employee_ID")
+print(df_full)
+```
+
+## Alternativa: `merge()`
+
+`merge()` hace lo mismo con sintaxis diferente:
+
+```{r}
+#| eval: false
+merge(df_employees, df_salaries, by = "Employee_ID")          # inner
+merge(df_employees, df_salaries, by = "Employee_ID", all.x = TRUE) # left
+merge(df_employees, df_salaries, by = "Employee_ID", all.y = TRUE) # right
+merge(df_employees, df_salaries, by = "Employee_ID", all = TRUE)   # full
+```
+
+## Joins encadenados: crear los datos
+
+```{r}
+set.seed(42)
+ventas <- data.frame(
+  venta_id    = 1:20,
+  producto_id = sample(101:106, 20, replace = TRUE),
+  tienda_id   = sample(1:3, 20, replace = TRUE),
+  cantidad    = sample(1:10, 20, replace = TRUE)
+)
+productos <- data.frame(
+  producto_id     = 101:106,
+  nombre_producto = c("Manzanas","Peras","Plátanos",
+                      "Naranjas","Kiwis","Fresas"),
+  precio          = c(0.5, 0.7, 0.3, 0.6, 1.2, 0.8)
+)
+tiendas <- data.frame(
+  tienda_id     = 1:3,
+  nombre_tienda = c("Tienda A","Tienda B","Tienda C"),
+  ciudad        = c("Madrid","Barcelona","Valencia")
+)
+```
+
+## Eliminar duplicados: `distinct()`
+
+```{r}
+# Introducimos duplicados artificiales
+ventas <- rbind(ventas, ventas[sample(1:nrow(ventas), 3), ])#fijarse en el uso de rbind: añadimos filas al dataframe
+
+# Eliminamos filas duplicadas
+ventas_clean <- ventas %>%
+  distinct(venta_id, .keep_all = TRUE)
+
+nrow(ventas); nrow(ventas_clean)
+```
+
+## Join encadenado
+
+```{r}
+ventas_completas <- ventas_clean %>%
+  left_join(productos, by = "producto_id") %>%
+  left_join(tiendas,   by = "tienda_id")
+
+head(select(ventas_completas, venta_id, nombre_producto,
+            nombre_tienda, cantidad, precio), 4)
+```
+
+## Resumen por tienda
+
+```{r}
+ventas_completas %>%
+  group_by(nombre_tienda) %>%
+  summarise(
+    valor_total  = sum(cantidad * precio),
+    valor_medio  = mean(cantidad * precio),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(valor_total))
+```
+
+## Resumen de joins
+
+| Join | Filas resultantes |
+|------|-------------------|
+| `inner_join` | Solo coincidentes |
+| `left_join`  | Todas de x + NAs donde no hay coincidencia en y |
+| `right_join` | Todas de y + NAs donde no hay coincidencia en x |
+| `full_join`  | Todas de x e y, NAs donde no hay coincidencia |
+
+
+## Otras formas de combinar datos: `rbind()` y `cbind()`
+
+Los joins combinan por una **clave**. Pero a veces solo queremos **apilar** o **pegar** datasets sin clave:
+
+| Función | Qué hace | Requisito |
+|---------|----------|-----------|
+| `rbind()` | Apila **filas** (uno debajo de otro) | Mismas columnas y nombres |
+| `cbind()` | Pega **columnas** (uno al lado de otro) | Mismo número de filas, mismo orden |
+
+## `rbind()`: apilar filas
+
+Caso típico: nuevos registros con la misma estructura.
+
+```{r}
+df_new <- data.frame(
+  Employee_ID = 9:10,
+  Name        = c("Ivy", "Jack"),
+  Department  = c("Sales", "HR")
+)
+
+df_all <- rbind(df_employees, df_new)
+print(df_all)
+```
+
+## `rbind()`: los nombres deben coincidir
+
+`rbind()` es estricto: si las columnas no coinciden, da error.
+
+```{r}
+#| eval: false
+df_bad <- data.frame(Employee_ID = 11, Nombre = "Kate", Department = "IT")
+rbind(df_employees, df_bad)
+# Error: names do not match previous names
+```
+
+Las columnas se emparejan **por nombre**, no por posición (el orden puede cambiar, los nombres no).
+
+## `cbind()`: pegar columnas
+
+```{r}
+df_extra <- data.frame(
+  Age   = c(25, 30, 35, 40, 28, 33, 45, 38),
+  Remote = c(TRUE, FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, FALSE)
+)
+
+df_cb <- cbind(df_employees, df_extra)
+print(df_cb)
+```
+
+## `cbind()`: el peligro
+
+`cbind()` **no comprueba nada**: pega fila 1 con fila 1, fila 2 con fila 2...
+
+```{r}
+# Si cambia el orden de una de las tablas, los datos se desalinean sin avisar
+df_extra_mal <- df_extra[8:1, ]
+
+cbind(df_employees, df_extra_mal) %>% head(3)
+```
+
+Alice (fila 1) recibe ahora la edad de Hank. **Si hay una clave, usa un join.**
+
+## ¿Join, `rbind` o `cbind`?
+
+| Situación | Herramienta |
+|-----------|-------------|
+| Mismas variables, **más observaciones** | `rbind()` / `bind_rows()` |
+| Mismas observaciones, **más variables**, orden garantizado | `cbind()` / `bind_cols()` |
+| Observaciones identificadas por una **clave** | `left_join()`, `inner_join()`... |
+
+\begin{block}{Regla práctica}
+Apilar = \texttt{rbind}. Pegar sin clave = \texttt{cbind}. Si hay clave, \texttt{join}.
+\end{block}
+

@@ -1,0 +1,351 @@
+---
+title: "Análisis Exploratorio de Datos (EDA)"
+subtitle: "Pipeline completo con nycflights13"
+author: "Andrea Celico"
+date: "`r Sys.Date()`"
+format:
+  beamer:
+    theme: Madrid
+    aspectratio: 169
+    fontsize: 9pt
+    code-block-font-size: \footnotesize
+    slide-level: 2
+    highlight-style: github
+    header-includes: |
+      \usepackage{tcolorbox}
+      \tcbuselibrary{skins,breakable}
+      \AtBeginDocument{
+        \renewenvironment{Shaded}{%
+          \begin{tcolorbox}[colback=gray!10!white, colframe=gray!40!black, boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt]%
+        }{%
+          \end{tcolorbox}%
+        }
+      }
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| include: false
+options(max.print = 20, tibble.print_max = 5, tibble.print_min = 5)
+knitr::opts_chunk$set(fig.width = 7, fig.height = 3)
+knitr::knit_hooks$set(output = function(x, options) {
+  paste0(
+    '\\begin{tcolorbox}[colback=orange!8!white, colframe=orange!60!black,',
+    ' boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt,',
+    ' fontupper=\\footnotesize\\ttfamily]\n',
+    '\\begin{verbatim}\n', x,
+    '\\end{verbatim}\n\\end{tcolorbox}\n'
+  )
+})
+library(tidyverse)
+library(nycflights13)
+library(lubridate)
+library(skimr)
+library(janitor)
+library(patchwork)
+set.seed(123)
+flights <- nycflights13::flights
+```
+
+## Pipeline de EDA
+
+El **Análisis Exploratorio de Datos** sigue una pipeline estándar:
+
+1. Carga y vistazo inicial
+2. Limpieza y preparación
+3. Análisis univariante
+4. Análisis bivariante
+5. Análisis temporal
+6. Detección de outliers
+7. Missing data
+8. Feature engineering
+
+## 1. Carga y vistazo inicial
+
+```{r}
+#| results: hold
+dim(flights)
+names(flights)
+```
+
+## 1. Estructura del dataset
+
+```{r}
+#| eval: false
+glimpse(flights)
+```
+
+```{r}
+head(flights, 3)
+```
+
+## La función `skim()`
+
+`skim()` del paquete `skimr` proporciona un resumen completo y organizado por tipo de variable:
+
+```{r}
+#| eval: false
+skim(flights)   # resumen completo
+```
+
+```{r}
+#| eval: false
+# Selección de variables y skim
+flights %>%
+  select(dep_delay, arr_delay, air_time, distance) %>%
+  skim()
+```
+
+## Detectar columnas con NAs
+
+```{r}
+flights %>%
+  skim() %>%
+  filter(n_missing > 0) %>%
+  select(skim_variable, n_missing)
+```
+
+## 2. Limpieza: normalizar nombres
+
+`clean_names()` del paquete `janitor` convierte los nombres a `snake_case`:
+
+```{r}
+flights_1 <- flights %>%
+  rename("Year" = "year", "Month" = "month") %>%
+  clean_names() %>%   # normaliza todo
+  distinct()          # elimina duplicados
+
+names(flights_1)[1:6]
+```
+
+## 2. Limpieza: crear columnas datetime
+
+Los horarios vienen como enteros (`517` = 05:17). Creamos columnas `datetime` reales:
+
+```{r}
+#primero observo el formato de las fechas
+summary(flights$sched_dep_time, flights$sched_arr_time)
+# luego las transfomo en enteros (horas) y decimales (minutos)
+flights <- flights %>%
+  mutate(
+    sched_dep_datetime = make_datetime(
+      year, month, day,
+      hour = sched_dep_time %/% 100,
+      min  = sched_dep_time %% 100
+    )
+  )
+head(select(flights, sched_dep_time, sched_dep_datetime), 3)
+```
+
+## 2. Limpieza: resumen de NAs
+Antes hemos identificado las columnas que contenian NA
+```{r}
+na_summary <- flights %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(),
+               names_to = "variable", values_to = "n_missing") %>%
+  filter(n_missing > 0) %>%
+  arrange(desc(n_missing))
+
+head(na_summary, 6)
+```
+
+## 3. Análisis univariante: distribución de retrasos
+
+```{r}
+flights %>%
+  filter(dep_delay < 200) %>%
+  ggplot(aes(x = dep_delay)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 binwidth = 5, fill = "#1f78b4", alpha = 0.6) +
+  geom_density(color = "red", linewidth = 1) +
+  labs(title = "Distribución de retrasos en salida",
+       x = "Retraso (min)", y = "Densidad") +
+  theme_minimal()
+```
+
+## 3. Análisis univariante: retrasos por aerolínea
+
+```{r}
+flights %>%
+  filter(dep_delay < 180) %>%
+  ggplot(aes(x = reorder(carrier, dep_delay, FUN = median),#ordeno las aerolineas por la mediana de su retraso 
+             y = dep_delay)) +
+  geom_boxplot(fill = "#33a02c", alpha = 0.4, outlier.shape = NA) +#outlier shape deja de visualizar los outliers
+  coord_flip() +
+  labs(title = "Retrasos por aerolínea",
+       x = "Aerolínea", y = "Retraso (min)") +
+  theme_minimal()
+```
+
+## 4. Análisis categórico: vuelos por aeropuerto
+
+```{r}
+obj<-flights %>% count(origin, sort = TRUE)
+```
+
+## 4. Barras: vuelos por aeropuerto
+
+```{r}
+ggplot(obj, aes(origin, n)) +
+  geom_col(fill = "steelblue") +
+  labs(title = "Vuelos por aeropuerto de origen",
+       x = "Aeropuerto", y = "Nº de vuelos") +
+  theme_minimal()
+```
+
+## 4. Análisis categórico: vuelos por aeropuerto y aerolínea
+Puedo descomponer el total de los vuelos por aerolinea 
+```{r}
+top_carriers <- flights %>% count(carrier, sort=TRUE) %>%
+  slice_head(n=8) %>% pull(carrier)
+
+flights %>%
+  filter(carrier %in% top_carriers) %>%
+  count(origin, carrier) %>%
+  ggplot(aes(x = origin, y = n, fill = carrier)) +
+  geom_col() +
+  scale_fill_brewer(palette = "Set2") +
+  labs(title = "Vuelos por aeropuerto y aerolínea") +
+  theme_minimal()
+```
+
+## 5. Análisis bivariante: correlaciones
+
+```{r}
+#| results: hide
+# 1. Variables numéricas sin NA
+num_vars <- flights %>%
+  select(dep_delay, arr_delay, air_time, distance) %>%
+  drop_na()
+
+# 2. Matriz de correlaciones
+cor_mat <- cor(num_vars, method = "pearson")#necesita variables numericas 
+knitr::kable(round(cor_mat, 2), caption = "Matriz de correlaciones")# esto es solo para visualizacion 
+
+# 3. Formato largo para ggplot
+corr_long <- as.data.frame(as.table(cor_mat))
+names(corr_long) <- c("Var1", "Var2", "Cor")
+
+# 4. Heatmap con valores en las casillas
+ggplot(corr_long, aes(x = Var1, y = Var2, fill = Cor)) +
+  geom_tile(color = "white", linewidth = 0.8) +
+  geom_text(aes(label = sprintf("%.2f", Cor),
+                color = abs(Cor) > 0.6),        # texto blanco en casillas oscuras
+            size = 4.5) +
+  scale_fill_gradient2(low = "#B2182B", mid = "white", high = "#2166AC",
+                       midpoint = 0, limits = c(-1, 1), name = "r") +
+  scale_color_manual(values = c(`FALSE` = "black", `TRUE` = "white"),
+                     guide = "none") +
+  scale_y_discrete(limits = rev) +              # diagonal de arriba-izq. a abajo-dcha.
+  coord_fixed() +
+  labs(x = NULL, y = NULL,
+       title = "Correlaciones entre retrasos, tiempo de vuelo y distancia",
+       subtitle = "Indice de Pearson") +
+  theme_minimal(base_size = 12) +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+## 5. Análisis bivariante: scatter con regresión
+
+```{r}
+flights %>%
+  filter(month %in% 1:3, !is.na(arr_delay)) %>%
+  ggplot(aes(x = distance, y = arr_delay)) +
+  geom_point(alpha = 0.15, color = "#33a02c") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(title = "Retraso vs distancia (Ene–Mar)",
+       x = "Distancia (millas)", y = "Retraso llegada (min)") +
+  theme_minimal() #correlación = 0 
+
+flights %>%
+  filter(month %in% 1:3, !is.na(arr_delay)) %>%
+  ggplot(aes(x = distance, y = air_time)) +
+  geom_point(alpha = 0.15, color = "#33a02c") +
+  geom_smooth(method = "lm", color = "red", se = T) +
+  labs(title = "Retraso vs distancia (Ene–Mar)",
+       x = "Distancia (millas)", y = "Retraso llegada (min)") +
+  theme_minimal() #correlación positiva elevada 
+```
+
+## 6. Análisis temporal
+
+```{r}
+#visualizo la serie temporal del numero de vuelos por dia 
+flights %>%
+  mutate(date = make_date(year, month, day)) %>%
+  count(date) %>%
+  ggplot(aes(date, n)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Vuelos por día (serie temporal)",
+       x = "Fecha", y = "Nº de vuelos") +
+  theme_minimal()
+```
+
+## 6. Retrasos por hora del día
+
+```{r}
+flights %>%
+  group_by(hour) %>%
+  summarise(retraso_medio = mean(dep_delay, na.rm = TRUE)) %>% #calculo la media de retrasos por hora de salida 
+  ggplot(aes(hour, retraso_medio)) +
+  geom_line() + geom_point() +
+  labs(title = "Retraso medio por hora de salida",
+       x = "Hora", y = "Retraso (min)") +
+  theme_minimal()
+```
+
+## 7. Detección de outliers
+
+```{r}
+ggplot(flights, aes(y = arr_delay)) +
+  geom_boxplot(fill = "orange", alpha = 0.5) +
+  coord_flip() +
+  labs(title = "Outliers en arr_delay") +
+  theme_minimal()
+```
+
+## 7. Identificar vuelos con retrasos extremos
+
+```{r}
+flights %>%
+  filter(arr_delay > 300) %>%
+  arrange(desc(arr_delay)) %>%
+  select(year:day, carrier, tailnum, arr_delay) %>%
+  head(5)
+```
+
+## 8. Missing data: vuelos cancelados
+
+```{r}
+#creo una variable de vuelo cancelado si no existe ni hora de salida ni de llegada 
+flights %>%
+  mutate(cancelled = is.na(dep_time) & is.na(arr_time)) %>%
+  count(cancelled) %>%
+  mutate(proporcion = round(n / sum(n), 3))
+```
+
+## 9. Feature engineering
+Con feature engineering ns referimos a crear, transformar, seleccionar o modificar variables (features) a partir de los datos originales para mejorar la capacidad de análisis de un conjunto de datos o el rendimiento de un modelo estadístico o de machine learning.
+```{r}
+flights_fe <- flights %>%
+  mutate(
+    delayed_dep   = as.integer(dep_delay > 15),
+    delayed_arr   = as.integer(arr_delay > 15),
+    speed         = distance / (air_time / 60),
+    is_weekend    = wday(make_date(year, month, day),
+                         week_start = 1) %in% c(6, 7)
+  )
+
+flights_fe %>%
+  select(dep_delay, delayed_dep, speed, is_weekend) %>%
+  head(5)
+```
+

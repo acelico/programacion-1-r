@@ -1,0 +1,357 @@
+---
+title: "Introducción a R"
+subtitle: "Tipos y estructuras de datos"
+author: "Andrea Celico"
+date: "9 Septiembre 2026"
+format:
+  beamer:
+    theme: Madrid
+    aspectratio: 169
+    fontsize: 9pt
+    code-block-font-size: \footnotesize
+    slide-level: 2
+    highlight-style: github
+    header-includes: |
+      \usepackage{tcolorbox}
+      \tcbuselibrary{skins,breakable}
+      \AtBeginDocument{
+        \renewenvironment{Shaded}{%
+          \begin{tcolorbox}[colback=gray!10!white, colframe=gray!40!black, boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt]%
+        }{%
+          \end{tcolorbox}%
+        }
+      }
+execute:
+  echo: true
+  eval: true
+---
+
+```{r}
+#| include: false
+options(max.print = 20)
+knitr::knit_hooks$set(output = function(x, options) {
+  paste0(
+    '\\begin{tcolorbox}[colback=orange!8!white, colframe=orange!60!black,',
+    ' boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt,',
+    ' fontupper=\\footnotesize\\ttfamily]\n',
+    '\\begin{verbatim}\n',
+    x,
+    '\\end{verbatim}\n',
+    '\\end{tcolorbox}\n'
+  )
+})
+```
+
+## Antes de empezar: limpiar el entorno
+
+Siempre comenzamos limpiando el área de trabajo para partir de cero.
+
+```{r}
+rm(list = ls())
+```
+
+\begin{exampleblock}{Atajo de teclado}
+\textbf{Ctrl + Enter} (o Ctrl + R) para ejecutar el código línea por línea en RStudio.
+\end{exampleblock}
+
+## Operaciones básicas
+
+R funciona como una calculadora:
+
+```{r}
+#| results: hold
+1 + 1
+5 - 4
+3 * 8
+25 / 5
+2**3      # potencias
+sqrt(25)  # raíz cuadrada
+```
+
+## Variables y objetos
+
+En R todo es un **objeto**. Hay dos formas de asignarlo:
+
+```{r}
+a = 1 + 1    # con "="
+x <- 1       # con "<-"  (forma preferida)
+y <- x + 1
+```
+
+\begin{alertblock}{Cuidado}
+Los objetos se \textbf{sobreescriben} sin aviso.
+\end{alertblock}
+
+```{r}
+a <- "casa"   # ahora 'a' ya no es 2, es texto
+a
+```
+
+## Tipos de datos en R
+
+Usamos `class()` para ver el tipo de un objeto:
+
+```{r}
+#| results: hold
+d <- 25 / 5
+class(d)      # numeric
+
+t <- "RStudio"
+class(t)      # character
+```
+
+
+Podemos **convertir** entre tipos con `as.numeric()`, `as.character()`, `as.logical()`:
+
+```{r}
+f  <- 25**0.5
+fT <- as.character(f)
+class(fT)
+```
+
+## Estructuras de datos en R
+
+| Estructura | Dimensiones | Tipos de datos |
+|------------|-------------|----------------|
+| Vector     | 1D          | Un solo tipo   |
+| Lista      | 1D anidada  | Mixtos         |
+| Matriz     | 2D          | Un solo tipo   |
+| Factor     | 1D          | Categórico     |
+| Data Frame | 2D          | Mixtos         |
+
+## Vectores: crear
+
+Un vector es una secuencia de elementos del **mismo tipo**.
+
+```{r}
+z   <- 0:20                       # secuencia con ":"
+x   <- c(10, 20, 30, 40, 50, 60)  # valores concretos con c()
+sec <- seq(0, 10, by = 2)         # secuencia con intervalo
+
+length(x)   # número de elementos
+```
+
+## Vectores: acceder a elementos
+
+Los índices en R empiezan en **1**, no en 0.
+
+```{r}
+#| results: hold
+x[1]           # primer elemento
+x[5]           # quinto elemento
+x[length(x)]   # último elemento
+```
+
+Subvectores:
+
+```{r}
+y <- x[1:3]       # elementos del 1 al 3
+z <- x[-c(1:3)]   # excluir los tres primeros
+y; z
+```
+
+## Vectores: filtrar y tipos mixtos
+
+Filtrar por condición:
+
+```{r}
+b <- x[x > 27]
+b
+```
+
+Si combinamos texto y números, R convierte **todo a texto**:
+
+```{r}
+y <- c("a", 1)
+class(y)
+
+# y[2] + 5  # Error esperado: no se puede sumar texto
+```
+
+\begin{alertblock}{Importante}
+Verificar siempre el tipo con \texttt{class()} antes de operar.
+\end{alertblock}
+
+## Listas: crear y acceder
+
+Una lista puede contener **objetos de distintos tipos**.
+
+```{r}
+mylist <- list(name = "Fred", wife = "Mary",
+               no.children = 3, child.ages = c(4, 7, 9))
+```
+
+```{r}
+#| results: hold
+mylist$name             # por nombre con $
+mylist[["child.ages"]]  # con [[]]
+mylist[[4]][1]          # cuarto objeto, primer elemento
+```
+
+## Listas: caso de uso
+
+```{r}
+nombre         <- c("Shrek", "Shrek 2", "Shrek Tercero",
+                    "Shrek: Felices por siempre")
+puntuacion     <- c(7.9, 7.2, 6.1, 6.3)
+posterior_2005 <- c(FALSE, FALSE, TRUE, TRUE)
+
+peliculas <- list(nombre, puntuacion, posterior_2005)
+names(peliculas) <- c("nombre", "puntuacion", "posterior_2005")
+
+peliculas[["nombre"]][2]
+```
+
+## Matrices: crear
+
+Una matriz es un vector en **2 dimensiones** (filas × columnas).
+
+```{r}
+mat2 <- matrix(1:12, nrow = 4)
+mat2
+```
+
+```{r}
+v1 <- 1:4
+v2 <- 5:8
+v3 <- 9:12
+v4 <- 13:16
+matriz <- rbind(v1, v2, v3, v4)   # unir por filas
+c_mat  <- cbind(v1, v2, v3, v4)   # unir por columnas
+
+matriz
+c_mat
+```
+
+## Matrices: crear con nombres
+
+```{r}
+mdat <- matrix(c(1,2,3, 11,12,13, 21,22,23),
+               nrow = 3, ncol = 3, byrow = TRUE,
+               dimnames = list(c("row1","row2","row3"),
+                               c("V1","V2","V3")))
+mdat
+dim(mdat)
+```
+
+## Matrices: indexar
+
+```{r}
+mdat[c(1,3), ]          # filas 1 y 3, todas las columnas
+```
+
+```{r}
+mdat[c(1,3), c(1,3)]    # filas 1 y 3, columnas 1 y 3
+mdat[1,2]
+```
+
+## Factores: crear
+
+Un **factor** representa una variable categórica.
+
+```{r}
+#| results: hold
+y <- factor(c("V","M","M","M","M","V"), levels = c("V","M"))
+nlevels(y)
+levels(y)
+```
+
+Renombrar niveles:
+
+```{r}
+levels(y)[1] <- "Vitoria"
+levels(y)[2] <- "Malaga"
+y
+```
+
+## Factores: tabla de frecuencias
+
+```{r}
+pct  <- c("alto","bajo","bajo","medio","alto",
+          "medio","bajo","alto","alto","alto")
+fpct <- factor(pct, levels = c("bajo","medio","alto"))
+```
+
+```{r}
+#| results: hold
+table(fpct)       # frecuencia de cada nivel
+as.numeric(fpct)  # codificación interna
+```
+
+\begin{exampleblock}{Nota}
+Definir el orden de los niveles con \texttt{levels=} es importante para visualizaciones y modelos.
+\end{exampleblock}
+
+## Data Frames: crear
+
+Un data frame es como una **hoja de Excel**: filas = observaciones, columnas = variables.
+
+```{r}
+mydata <- data.frame(
+  x = 1:5,
+  y = c(20, 30, 40, 50, 60),
+  z = c("Juan", "Maria", "Leticia", "Andrea", "John")
+)
+colnames(mydata) <- c("ID", "edad", "nombre")
+mydata
+```
+
+## Data Frames: explorar
+
+```{r}
+#| results: hold
+nrow(mydata)   # número de filas
+ncol(mydata)   # número de columnas
+dim(mydata)    # filas y columnas
+```
+
+```{r}
+str(mydata)    # estructura de las variables
+```
+
+## Data Frames: filtrar (I)
+
+```{r}
+mydata[mydata$ID > 1, ]                               # condición simple
+```
+
+```{r}
+mydata[mydata$ID > 1 & mydata$nombre == "Maria", ]   # AND
+```
+
+## Data Frames: filtrar (II)
+
+```{r}
+# OR: una condición u otra
+mydata[mydata$nombre == "Maria" | mydata$nombre == "Leticia", ]
+```
+
+```{r}
+# Excluir con "!"
+mydata[mydata$ID > 1 & mydata$nombre != "Juan", ]
+```
+
+## Datasets predefinidos: iris
+
+R incluye datasets listos para practicar. `data()` lista todos los disponibles.
+
+```{r}
+df_iris <- iris
+head(df_iris, 3)   # primeras 3 filas
+```
+
+```{r}
+#| results: hold
+dim(df_iris)       # 150 filas, 5 columnas
+names(df_iris)     # nombres de las variables
+```
+
+## Resumen
+
+| Estructura | Crear con                        | Acceder con              |
+|------------|----------------------------------|--------------------------|
+| Vector     | `c()`, `:`                       | `x[i]`                   |
+| Lista      | `list()`                         | `x$nombre`, `x[[i]]`     |
+| Matriz     | `matrix()`, `rbind()`, `cbind()` | `m[fila, col]`           |
+| Factor     | `factor()`                       | `levels()`, `table()`    |
+| Data Frame | `data.frame()`                   | `df$col`, `df[cond, ]`   |

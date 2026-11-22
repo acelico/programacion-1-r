@@ -1,0 +1,232 @@
+---
+title: "Visualización de Datos con ggplot2"
+subtitle: "R base, gramática de gráficos y personalización"
+author: "Andrea Celico"
+date: "2026"
+format:
+  beamer:
+    theme: Madrid
+    aspectratio: 169
+    fontsize: 9pt
+    code-block-font-size: \footnotesize
+    slide-level: 2
+    highlight-style: github
+    header-includes: |
+      \usepackage{tcolorbox}
+      \tcbuselibrary{skins,breakable}
+      \AtBeginDocument{
+        \renewenvironment{Shaded}{%
+          \begin{tcolorbox}[colback=gray!10!white, colframe=gray!40!black, boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt]%
+        }{%
+          \end{tcolorbox}%
+        }
+      }
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| include: false
+options(max.print = 20)
+knitr::opts_chunk$set(fig.width = 7, fig.height = 3)
+knitr::knit_hooks$set(output = function(x, options) {
+  paste0(
+    '\\begin{tcolorbox}[colback=orange!8!white, colframe=orange!60!black,',
+    ' boxrule=0.4pt, left=2pt, right=2pt, top=2pt, bottom=2pt,',
+    ' fontupper=\\footnotesize\\ttfamily]\n',
+    '\\begin{verbatim}\n', x,
+    '\\end{verbatim}\n\\end{tcolorbox}\n'
+  )
+})
+library(tidyverse)
+```
+
+## Gráficos en R base
+
+Antes de `ggplot2`, R ya incluía funciones gráficas integradas, útiles para exploración rápida.
+
+| Función | Tipo de gráfico |
+|---------|-----------------|
+| `plot()` | Dispersión / general |
+| `hist()` | Histograma |
+| `boxplot()` | Diagrama de caja |
+| `barplot()` | Barras |
+
+## R base: ejemplos básicos
+
+```{r}
+par(mfrow = c(1, 3))  # 3 gráficos en fila
+plot(mpg$displ, mpg$hwy, main = "Dispersión", pch = 19, col = "blue")
+hist(mpg$hwy, main = "Histograma", col = "lightgreen")
+boxplot(mpg$hwy, main = "Boxplot", col = "orange")
+par(mfrow = c(1, 1))
+```
+
+## R base: personalización
+
+```{r}
+plot(mpg$displ, mpg$hwy,
+     main = "Relación displ vs hwy",
+     xlab = "Cilindrada", ylab = "Consumo carretera",
+     pch = 16, col = "darkred", cex = 1.2)
+abline(lm(mpg$hwy ~ mpg$displ), col = "blue", lwd = 2)
+```
+
+## R base vs. ggplot2
+
+| Característica | R base | ggplot2 |
+|----------------|--------|---------|
+| Curva de aprendizaje | Baja | Media |
+| Personalización | Manual, paso a paso | Declarativa, consistente |
+| Gramática de gráficos | No | Sí |
+| Gráficos complejos | Difícil | Natural |
+
+## La gramática de gráficos (ggplot2)
+[Here you find an introduction](https://ggplot2.tidyverse.org/articles/ggplot2.html)
+
+```{r}
+#let's try to solve it here:
+mpg <- mpg
+ggplot(data=mpg)
+```
+Todo gráfico en `ggplot2` se construye con:
+
+- **Datos** (`data`)
+- **Aesthetics** (`aes`): mapeo de variables a atributos visuales
+- **Geometrías** (`geom_*`): tipo de representación
+- **Facetas**: subgráficos
+- **Temas**: apariencia visual
+
+## Exploración del dataset
+
+```{r}
+print(paste("El dataset tiene", nrow(mpg), "filas y", ncol(mpg), "columnas"))
+head(mpg, 3)
+```
+
+## Diagrama de dispersión básico
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(aes(x = displ, y = hwy))
+```
+
+## Colores según variable o fijos
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(aes(x = displ, y = hwy, color = class))
+```
+
+## Color fijo
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(aes(x = displ, y = hwy), color = "blue")
+```
+
+## Facetas
+
+```{r}
+#| fig-height: 3.5
+ggplot(data = mpg) +
+  geom_point(aes(x = displ, y = hwy)) +
+  facet_wrap(~ class, nrow = 2)
+```
+
+## Suavizado + puntos
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(aes(x = displ, y = hwy)) +
+  geom_smooth(aes(x = displ, y = hwy, color = drv))
+```
+
+## Dataset `diamonds`: barras e histograma
+
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(mapping = aes(x = cut))
+```
+
+## Histograma
+
+```{r}
+ggplot(diamonds) +
+  geom_histogram(aes(x = carat), bins = 30)
+```
+
+## Boxplot
+
+```{r}
+ggplot(data = diamonds) +
+  geom_boxplot(mapping = aes(x = cut, y = depth))
+```
+
+## Coordenadas: `coord_flip()`
+
+```{r}
+ggplot(diamonds) +
+  geom_boxplot(aes(x = cut, y = price)) +
+  coord_flip()
+```
+
+## Personalización: títulos y ejes
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = class)) +
+  labs(title = "Tamaño del motor vs consumo",
+       x = "Cilindrada (litros)",
+       y = "Millas por galón (carretera)",
+       color = "Clase de vehículo")
+```
+
+## Temas
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "theme_minimal()")
+```
+
+## Escalas de color
+
+```{r}
+ggplot(mpg, aes(displ, hwy, color = class)) +
+  geom_point() +
+  scale_color_brewer(palette = "Set2")
+```
+
+## Loops y gráficos
+
+`facet_wrap()` es equivalente a un bucle que crea un gráfico por categoría:
+
+```{r}
+#| eval: false
+classes <- unique(mpg$class)
+for (c in classes) {
+  subset_data <- mpg[mpg$class == c, ]
+  p <- ggplot(subset_data, aes(x = displ, y = hwy)) +
+    geom_point(color = "steelblue") +
+    labs(title = paste("Clase:", c)) +
+    theme_minimal()
+  print(p)
+}
+```
+
+
+## Visualización avanzada: facetas + color
+
+```{r}
+#| fig-height: 3.5
+ggplot(mpg, aes(x = displ, y = hwy, color = drv)) +
+  geom_point(alpha = 0.6) +
+  facet_wrap(~ class, nrow = 2) +
+  scale_color_brewer(palette = "Dark2") +
+  theme_minimal()
+```

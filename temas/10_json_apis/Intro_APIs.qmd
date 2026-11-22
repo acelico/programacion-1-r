@@ -1,0 +1,146 @@
+---
+title: "¿Qué es una API y cómo se usa en R?"
+subtitle: "Un ejemplo sencillo con datos macroeconómicos del Banco Mundial"
+author: "Programación 1 — Introducción a R"
+date: "2026"
+lang: es
+format:
+  html:
+    toc: true
+    toc-title: "Contenido"
+    toc-depth: 2
+    embed-resources: true
+execute:
+  echo: true
+  eval: true
+  warning: false
+  message: false
+---
+
+# 1. ¿Qué es una API?
+
+Una **API** (*Application Programming Interface*) es una dirección web (URL) pensada para que la lea un **programa** y no una persona. Si escribes `www.upna.es` en el navegador recibes una página para leer; si escribes la URL de una API recibes **datos**, normalmente en formato **JSON**.
+
+```
+Tu script en R ──(1) petición: una URL──▶ Servidor de la API
+               ◀─(2) respuesta: JSON────
+```
+
+# 2. ¿Para qué sirve?
+
+- Obtener datos **directamente desde el código**, sin entrar en una web, buscar el fichero y descargarlo a mano.
+- Acceder a datos de **organismos oficiales** (Banco Mundial, Eurostat, BCE, FMI, INE…) y de otros servicios (buscadores científicos, meteorología, redes sociales).
+- Pedir solo **lo que necesitas**: un país, un indicador, un rango de años.
+
+# 3. Ventajas (y un inconveniente)
+
+| Ventajas | Explicación |
+|---|---|
+| **Datos actualizados** | Ejecutas el script otra vez y tienes la última versión. |
+| **Reproducible** | El código dice de dónde salen los datos y qué se pidió exactamente. |
+| **A medida** | Pides solo el país, el indicador y los años que necesitas. |
+| **Automatizable** | Cambiar de país o de indicador es cambiar una palabra de la URL. |
+
+**Inconveniente:** necesitas conexión a internet y los datos pueden cambiar con el tiempo. Por eso conviene **guardar una copia con fecha** de lo que descargas.
+
+# 4. Cómo se usa: los tres pasos
+
+1. **Construir la URL.** Tiene una base, una ruta y unos parámetros:
+
+   ```
+   https://api.worldbank.org/v2/country/ESP/indicator/NY.GDP.MKTP.KD.ZG?format=json&date=2010:2023
+   \_____________________/\_____/\_____/\_/\_________/\_____________________/\____________________/
+   base                  versión país   código  indicador   parámetros: formato y años
+   ```
+
+2. **Pedirla desde R** con `fromJSON()` (paquete `jsonlite`), que descarga el JSON y lo convierte en objetos de R.
+3. **Quedarte con la parte útil** y convertirla en una tabla.
+
+::: {.callout-tip}
+## Antes de programar
+Pega siempre la URL en el navegador: verás el JSON tal como lo recibirá R.
+:::
+
+# 5. Ejemplo: crecimiento del PIB de España
+
+Usamos la **API del Banco Mundial**, gratuita y sin registro. El indicador `NY.GDP.MKTP.KD.ZG` es el **crecimiento anual del PIB (%)**.
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(jsonlite)
+```
+
+**Paso 1: construir la URL**
+
+```{r}
+#| label: url
+pais      <- "ESP"  #add "; otro pais"
+indicador <- "NY.GDP.MKTP.KD.ZG"
+
+url <- paste0("https://api.worldbank.org/v2/country/", pais,
+              "/indicator/", indicador,
+              "?format=json&date=2010:2023&per_page=100")
+url
+```
+
+**Paso 2: descargar**
+
+```{r}
+#| label: descarga
+respuesta <- fromJSON(url)
+
+length(respuesta)     # 2 elementos: [[1]] metadatos, [[2]] los datos
+```
+
+La respuesta del Banco Mundial tiene **dos partes**: el primer elemento son metadatos (páginas, total de registros) y el segundo contiene los datos.
+
+**Paso 3: quedarnos con los datos y ordenarlos**
+
+```{r}
+#| label: tabla
+pib <- respuesta[[2]] %>%
+  as_tibble() %>%
+  mutate(anio = as.integer(date),
+            crecimiento_pib = value) %>%
+  arrange(anio)
+
+pib
+```
+
+**Paso 4: un gráfico**
+
+```{r}
+#| label: grafico
+#| fig-width: 8
+#| fig-height: 4
+ggplot(pib, aes(x = anio, y = crecimiento_pib)) +
+  geom_col(fill = "steelblue") +
+  geom_hline(yintercept = 0) +
+  labs(title = "Crecimiento anual del PIB de España",
+       subtitle = "Fuente: API del Banco Mundial (NY.GDP.MKTP.KD.ZG)",
+       x = NULL, y = "Variación anual (%)") +
+  theme_minimal()
+```
+
+**Guardar una copia con fecha** (buena práctica, para poder reproducir el análisis más adelante):
+
+```{r}
+#| label: copia
+#| eval: false
+write_csv(pib, paste0("pib_espana_", Sys.Date(), ".csv"))
+```
+
+# 6. Pruébalo tú
+
+Cambia **solo dos valores** en el paso 1 y vuelve a ejecutar todo:
+
+- `pais`: `"FRA"`, `"DEU"`, `"ITA"`, `"USA"`…
+- `indicador`: `"FP.CPI.TOTL.ZG"` (inflación anual, %) o `"SL.UEM.TOTL.ZS"` (desempleo, % de la población activa).
+
+Recuerda cambiar también el título del gráfico.
+
+::: {.callout-note}
+## Si algo falla
+Un error `HTTP error 404` o `400` significa que la URL está mal escrita (código de país o indicador incorrectos). Pégala en el navegador y compárala con la documentación: <https://datahelpdesk.worldbank.org/knowledgebase/topics/125589>. Si el error es de conexión, revisa tu internet y vuelve a intentarlo.
+:::
