@@ -57,6 +57,7 @@ Cada carpeta de `temas/` corresponde a una sesión y contiene:
 
 ---
 
+DOI: https://doi.org/10.5281/zenodo.24468159
 
 
 
