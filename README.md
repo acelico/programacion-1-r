@@ -1,6 +1,6 @@
 # Programación I: introducción a R para el análisis de datos
 
-Materiales de la asignatura **Programación I** del **Grado en Economía y Data Analytics** (UNAV), curso 2026/2027.
+Materiales de la asignatura **Programación I** del **Grado en Economía y Data Analytics**.
 
 La asignatura es una introducción práctica al lenguaje **R** orientada al análisis de datos. Empieza por los tipos y estructuras de datos y los bloques básicos de programación, y llega al flujo de trabajo completo de un análisis: importar datos, visualizarlos con **ggplot2**, manipularlos con **dplyr**, limpiarlos, combinar tablas con joins, trabajar con **JSON** y **APIs**, y hacer un análisis exploratorio (EDA).
 
